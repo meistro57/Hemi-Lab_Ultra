@@ -1,7 +1,9 @@
 # 🧠 Hemi-Lab: Gateway Terminal - Technical Project Brief
 
 ## **Project Overview**
-A browser-based consciousness exploration platform that combines binaural beat audio therapy, Monroe Institute focus level protocols, and session tracking. Think "meditation app meets neurofeedback lab" with a cyberpunk aesthetic.
+A browser-based consciousness exploration platform that combines binaural beat audio therapy,
+Monroe Institute focus level protocols, and session tracking. Think "meditation app meets 
+neurofeedback lab" with a cyberpunk aesthetic.
 
 ---
 
@@ -287,4 +289,7 @@ POST /api/journal/contact - Flag potential contact events
 
 ---
 
-**This is a unique project combining neuroscience, spiritual practice, and cutting-edge web technology. The team should expect to learn about consciousness research, audio synthesis, and create something that genuinely helps people explore altered states of awareness.** 🧠✨
+**This is a unique project combining neuroscience, spiritual practice, 
+and cutting-edge web technology. The team should expect to learn about
+consciousness research, audio synthesis, and create something that genuinely 
+helps people explore altered states of awareness.** 🧠✨
