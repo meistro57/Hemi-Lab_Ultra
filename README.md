@@ -1,3 +1,5 @@
+--This is a personal project of mine. It may or may not work. It may or may not cause you harm. It may or may not induce anything. Use at your own risk as I will not be responsible for whatever happens. 
+
 # Hemi-Lab Ultra
 
 Hemi-Lab Ultra is a lightweight browser application for exploring altered states of consciousness. The project contains a single HTML file with an audio engine and optional static server.
