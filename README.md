@@ -14,6 +14,7 @@ Hemi-Lab Ultra is a lightweight browser application for exploring altered states
 - **Session Journal** – record mood and insights
 - **Pattern Analysis** – discover optimal practice trends
 - **Affirmation Layer** – spoken positive cues during sessions
+- **Data Import/Export** – backup and restore your journal history
 
 ## Usage
 1. Select your desired focus level.
@@ -36,7 +37,7 @@ The deeper states (Focus 15, 21, 23+) can produce profound results. Use quality 
 - Session composer for layering sounds
 - Advanced breath coaching patterns
 - Pattern analysis algorithms and contact mode
-- Data import/export system
+- Data import/export system (implemented)
 
 ### Phase 3 – Advanced Platform
 - Backend API with user accounts
