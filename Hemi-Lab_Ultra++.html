@@ -474,6 +474,11 @@
                             <input type="checkbox" id="breathCoachMode"> Breath Coach
                         </label>
                     </div>
+                    <div class="control-group">
+                        <label>
+                            <input type="checkbox" id="affirmationMode"> Affirmations
+                        </label>
+                    </div>
                 </div>
 
                 <div class="session-controls">
@@ -555,6 +560,12 @@
                 this.sessionTimer = null;
                 this.currentFocusLevel = null;
                 this.breathCycle = null;
+                this.affirmations = [
+                    'You are calm and focused.',
+                    'Every breath deepens your awareness.',
+                    'Your mind is open and clear.',
+                    'Positive energy surrounds you.'
+                ];
                 this.targetDuration = 15 * 60;
                 
                 this.focusPresets = {
@@ -627,6 +638,13 @@
                         this.startBreathCoach();
                     } else {
                         this.stopBreathCoach();
+                    }
+                });
+
+                // Affirmation toggle
+                document.getElementById('affirmationMode').addEventListener('change', (e) => {
+                    if (e.target.checked && this.isPlaying) {
+                        this.speakAffirmation();
                     }
                 });
 
@@ -703,6 +721,10 @@
 
                     if (document.getElementById('breathCoachMode').checked) {
                         this.startBreathCoach();
+                    }
+
+                    if (document.getElementById('affirmationMode').checked) {
+                        this.speakAffirmation();
                     }
 
                     // Visual effects
@@ -843,6 +865,13 @@
 
             stopBreathCoach() {
                 document.getElementById('breathCoach').classList.remove('active');
+            }
+
+            speakAffirmation() {
+                if (!('speechSynthesis' in window)) return;
+                const text = this.affirmations[Math.floor(Math.random() * this.affirmations.length)];
+                const utterance = new SpeechSynthesisUtterance(text);
+                speechSynthesis.speak(utterance);
             }
 
             animateREBAL() {
@@ -1095,6 +1124,7 @@ Your consciousness exploration platform is ready. Features available:
 ✅ Breath Coach - Synchronized breathing guidance
 ✅ Session Journal - Track your journey and insights
 ✅ Pattern Analysis - Discover your optimal practice times
+✅ Affirmation Layer - Spoken positive cues
 
 🚀 Select a Focus Level and click "Begin Session" to start your exploration.
 
