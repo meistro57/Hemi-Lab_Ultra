@@ -21,6 +21,7 @@ Hemi-Lab Ultra is a lightweight browser application for exploring altered states
 3. Click **Begin Session** to start audio and visuals.
 4. Optionally enable the REBAL shield or breath coach.
 5. After stopping, write down your experience in the journal.
+6. Click **Analyze Patterns** in the journal section to review insights.
 
 The deeper states (Focus 15, 21, 23+) can produce profound results. Use quality headphones in a quiet space and document everything.
 

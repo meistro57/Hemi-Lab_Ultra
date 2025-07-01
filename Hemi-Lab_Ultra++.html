@@ -388,6 +388,30 @@
             50% { opacity: 0.5; }
         }
 
+        .analysis-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .analysis-content {
+            background: #111;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
         @media (max-width: 768px) {
             .main-interface {
                 grid-template-columns: 1fr;
@@ -543,6 +567,14 @@
                     <div class="stat-label">Contact Events</div>
                 </div>
             </div>
+            <button class="btn btn-secondary" id="analyzePatterns" style="margin-top:15px;">🔍 Analyze Patterns</button>
+        </div>
+        <div class="analysis-overlay" id="analysisOverlay">
+            <div class="analysis-content">
+                <button class="btn btn-secondary" id="closeAnalysis" style="float:right;">Close</button>
+                <h3>📊 Pattern Analysis</h3>
+                <div id="analysisResults"></div>
+            </div>
         </div>
     </div>
 
@@ -650,6 +682,16 @@
 
                 // Journal saving
                 document.getElementById('saveJournal').addEventListener('click', () => this.saveJournalEntry());
+
+                // Pattern analysis
+                document.getElementById('analyzePatterns').addEventListener('click', () => {
+                    const patterns = this.analyzeSessionPatterns();
+                    document.getElementById('analysisResults').innerHTML = this.formatPatternAnalysis(patterns);
+                    document.getElementById('analysisOverlay').style.display = 'flex';
+                });
+                document.getElementById('closeAnalysis').addEventListener('click', () => {
+                    document.getElementById('analysisOverlay').style.display = 'none';
+                });
             }
 
             selectFocusLevel(level) {
@@ -1094,6 +1136,44 @@
                     level: entry.focusLevel,
                     quality: (entry.moodAfter || 5) - (entry.moodBefore || 5)
                 }));
+            }
+
+            formatPatternAnalysis(patterns) {
+                let html = '';
+
+                html += '<h4>Optimal Session Times</h4>';
+                if (patterns.bestTimes.length) {
+                    html += '<ul>' + patterns.bestTimes.slice(0,3).map(p =>
+                        `<li>${p.hour}:00 \u2013 Avg Improvement ${p.avgImprovement.toFixed(2)}</li>`
+                    ).join('') + '</ul>';
+                } else {
+                    html += '<p>No data yet.</p>';
+                }
+
+                html += '<h4>Mood Improvement by Focus Level</h4>';
+                const levels = Object.keys(patterns.moodCorrelations);
+                if (levels.length) {
+                    html += '<ul>';
+                    levels.forEach(level => {
+                        const arr = patterns.moodCorrelations[level];
+                        const avg = arr.reduce((a,b) => a+b, 0) / arr.length;
+                        html += `<li>Focus ${level}: ${avg.toFixed(2)}</li>`;
+                    });
+                    html += '</ul>';
+                } else {
+                    html += '<p>No data yet.</p>';
+                }
+
+                html += '<h4>Progression Path</h4>';
+                if (patterns.progressionPath.length) {
+                    html += '<ul>' + patterns.progressionPath.map(p =>
+                        `<li>${new Date(p.date).toLocaleDateString()}: Focus ${p.level} (${p.quality > 0 ? '+' : ''}${p.quality})</li>`
+                    ).join('') + '</ul>';
+                } else {
+                    html += '<p>No data yet.</p>';
+                }
+
+                return html;
             }
         }
 
