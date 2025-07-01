@@ -4,6 +4,18 @@
 
 Hemi-Lab Ultra is a lightweight browser application for exploring altered states of consciousness. The project contains a single HTML file with an audio engine and optional static server.
 
+## Why
+This project draws inspiration from the Monroe Institute's decades of
+brainwave-entrainment research and the U.S. Army's interest in those
+methods, revealed in declassified CIA "Gateway Process" documents. The
+institute pioneered the Hemi-Sync approach to stimulate left/right brain
+coherence and facilitate deep meditative states. Government analysts
+later examined the techniques for potential applications in remote
+viewing and psychological operations. Hemi-Lab Ultra explores similar
+concepts in an open-source context so individuals can experiment with
+these audio patterns themselves. The project has no affiliation with the
+Monroe Institute or any government agency.
+
 ## Quick Start
 1. Open `Hemi-Lab_Ultra++.html` directly in a modern browser; or
 2. Install dependencies with `npm install`, run `node server.js` and visit [http://localhost:3000](http://localhost:3000) for a local server.
