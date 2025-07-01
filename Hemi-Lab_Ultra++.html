@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🧠 Hemi-Lab Ultra</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <script src="binaural_engine.js"></script>
     <style>
         * {
             margin: 0;
@@ -459,6 +460,10 @@
                         <button class="focus-btn" data-focus="23">Focus 23+<br><small>Contact</small></button>
                         <button class="focus-btn" data-focus="custom">Custom<br><small>Compose</small></button>
                     </div>
+                    <div class="control-group" style="margin-top:10px;">
+                        <label>Focus Slider: <span id="focusSliderValue">10</span></label>
+                        <input type="range" class="slider" id="focusSlider" min="10" max="23" value="10">
+                    </div>
                 </div>
 
                 <div class="audio-controls">
@@ -486,6 +491,11 @@
                     <div class="control-group">
                         <label>
                             <input type="checkbox" id="isochronicMode"> Isochronic Pulse Layer
+                        </label>
+                    </div>
+                    <div class="control-group">
+                        <label>
+                            <input type="checkbox" id="driftMode"> Drift Mode
                         </label>
                     </div>
                     <div class="control-group">
@@ -590,6 +600,7 @@
         class HemiLabGateway {
             constructor() {
                 this.audioContext = null;
+                this.engine = null;
                 this.leftOscillator = null;
                 this.rightOscillator = null;
                 this.isochronicOscillator = null;
@@ -630,6 +641,7 @@
                     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
                     this.gainNode = this.audioContext.createGain();
                     this.gainNode.connect(this.audioContext.destination);
+                    this.engine = new BinauralEngine(this.audioContext, this.gainNode);
                 }
 
                 if (this.audioContext.state === 'suspended') {
@@ -644,6 +656,14 @@
                         const level = e.target.dataset.focus;
                         this.selectFocusLevel(level);
                     });
+                });
+
+                document.getElementById('focusSlider').addEventListener('input', (e) => {
+                    document.getElementById('focusSliderValue').textContent = e.target.value;
+                    const value = parseFloat(e.target.value);
+                    const levels = Object.keys(this.focusPresets).map(l => parseFloat(l));
+                    const nearest = levels.reduce((a, b) => Math.abs(b - value) < Math.abs(a - value) ? b : a, levels[0]);
+                    this.selectFocusLevel(nearest.toString());
                 });
 
                 // Audio controls
@@ -690,6 +710,16 @@
                 document.getElementById('affirmationMode').addEventListener('change', (e) => {
                     if (e.target.checked && this.isPlaying) {
                         this.speakAffirmation();
+                    }
+                });
+
+                document.getElementById('driftMode').addEventListener('change', (e) => {
+                    if (this.engine) {
+                        if (e.target.checked) {
+                            this.engine.startDrift();
+                        } else {
+                            this.engine.stopDrift();
+                        }
                     }
                 });
 
@@ -778,6 +808,10 @@
                 
                 this.currentFocusLevel = level;
                 document.getElementById('currentFocus').textContent = `Focus ${level}`;
+                if (document.getElementById('focusSlider')) {
+                    document.getElementById('focusSlider').value = parseFloat(level) || parseFloat(level);
+                    document.getElementById('focusSliderValue').textContent = level;
+                }
 
                 if (this.focusPresets[level]) {
                     const preset = this.focusPresets[level];
@@ -828,6 +862,13 @@
 
                     this.leftOscillator.start();
                     this.rightOscillator.start();
+
+                    this.engine.leftOsc = this.leftOscillator;
+                    this.engine.rightOsc = this.rightOscillator;
+                    this.engine.gainNode = this.gainNode;
+                    if (document.getElementById('driftMode').checked) {
+                        this.engine.startDrift();
+                    }
 
                     // Isochronic pulse if enabled
                     if (document.getElementById('isochronicMode').checked) {
@@ -913,6 +954,9 @@
             }
 
             stopSession() {
+                if (this.engine) {
+                    this.engine.stopDrift();
+                }
                 if (this.leftOscillator) {
                     this.leftOscillator.stop();
                     this.leftOscillator = null;
