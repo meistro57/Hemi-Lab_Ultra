@@ -65,7 +65,8 @@
 
         .visualization-area {
             position: relative;
-            background: rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            background: radial-gradient(circle at center, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.2) 100%);
             border: 1px solid rgba(0, 153, 255, 0.3);
             border-radius: 15px;
             padding: 25px;
@@ -73,6 +74,26 @@
             display: flex;
             align-items: center;
             justify-content: center;
+        }
+
+        .visualization-area::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image:
+                radial-gradient(#00ff88 1px, transparent 1px),
+                radial-gradient(#0099ff 1px, transparent 1px),
+                radial-gradient(#ff0088 1px, transparent 1px);
+            background-size: 3px 3px, 4px 4px, 5px 5px;
+            background-position: 0 0, 40px 60px, 20px 40px;
+            animation: starScroll 60s linear infinite;
+            opacity: 0.25;
+            pointer-events: none;
+        }
+
+        @keyframes starScroll {
+            from { transform: translateY(0); }
+            to { transform: translateY(-1000px); }
         }
 
         .focus-selector {
@@ -202,10 +223,11 @@
             width: 100%;
             height: 100%;
             border-radius: 50%;
-            background: radial-gradient(circle at 30% 30%, rgba(0, 255, 136, 0.6), rgba(0, 153, 255, 0.3), rgba(255, 0, 136, 0.2));
-            box-shadow: 
-                0 0 50px rgba(0, 255, 136, 0.4),
-                inset 0 0 50px rgba(0, 153, 255, 0.2);
+            background: radial-gradient(circle at 30% 30%, rgba(0, 255, 136, 0.7), rgba(0, 153, 255, 0.4), rgba(255, 0, 136, 0.3));
+            box-shadow:
+                0 0 60px rgba(0, 255, 136, 0.5),
+                inset 0 0 60px rgba(0, 153, 255, 0.3);
+            filter: drop-shadow(0 0 15px rgba(255, 0, 136, 0.4));
             animation: rebalPulse 4s ease-in-out infinite;
             position: relative;
             overflow: hidden;
@@ -430,6 +452,10 @@
                         <input type="range" class="slider" id="volume" min="0" max="100" value="50">
                     </div>
                     <div class="control-group">
+                        <label>Phase Shift (°): <span id="phaseShiftValue">0</span></label>
+                        <input type="range" class="slider" id="phaseShift" min="0" max="360" value="0">
+                    </div>
+                    <div class="control-group">
                         <label>
                             <input type="checkbox" id="isochronicMode"> Isochronic Pulse Layer
                         </label>
@@ -518,6 +544,7 @@
                 this.leftOscillator = null;
                 this.rightOscillator = null;
                 this.isochronicOscillator = null;
+                this.phaseDelayNode = null;
                 this.gainNode = null;
                 this.isPlaying = false;
                 this.sessionStartTime = null;
@@ -576,6 +603,11 @@
                     }
                 });
 
+                document.getElementById('phaseShift').addEventListener('input', (e) => {
+                    document.getElementById('phaseShiftValue').textContent = e.target.value;
+                    if (this.isPlaying) this.updatePhaseShift();
+                });
+
                 // Session controls
                 document.getElementById('startBtn').addEventListener('click', () => this.startSession());
                 document.getElementById('stopBtn').addEventListener('click', () => this.stopSession());
@@ -618,10 +650,16 @@
                     const baseFreq = parseFloat(document.getElementById('baseFreq').value);
                     const beatFreq = parseFloat(document.getElementById('beatFreq').value);
                     const volume = parseFloat(document.getElementById('volume').value) / 100;
+                    const phaseShift = parseFloat(document.getElementById('phaseShift').value);
+
+                    const delaySeconds = (phaseShift / 360) / baseFreq;
 
                     // Create binaural beat
                     this.leftOscillator = this.audioContext.createOscillator();
                     this.rightOscillator = this.audioContext.createOscillator();
+
+                    this.phaseDelayNode = this.audioContext.createDelay(0.1);
+                    this.phaseDelayNode.delayTime.value = delaySeconds;
 
                     const leftGain = this.audioContext.createGain();
                     const rightGain = this.audioContext.createGain();
@@ -631,7 +669,8 @@
                     this.rightOscillator.frequency.value = baseFreq + beatFreq;
 
                     this.leftOscillator.connect(leftGain);
-                    this.rightOscillator.connect(rightGain);
+                    this.rightOscillator.connect(this.phaseDelayNode);
+                    this.phaseDelayNode.connect(rightGain);
                     leftGain.connect(merger, 0, 0);
                     rightGain.connect(merger, 0, 1);
                     merger.connect(this.gainNode);
@@ -687,6 +726,7 @@
 
                 const baseFreq = parseFloat(document.getElementById('baseFreq').value);
                 const beatFreq = parseFloat(document.getElementById('beatFreq').value);
+                const phaseShift = parseFloat(document.getElementById('phaseShift').value);
 
                 if (this.leftOscillator && this.rightOscillator) {
                     this.leftOscillator.frequency.value = baseFreq;
@@ -696,6 +736,18 @@
                 if (this.isochronicOscillator) {
                     this.isochronicOscillator.frequency.value = beatFreq;
                 }
+
+                if (this.phaseDelayNode) {
+                    this.phaseDelayNode.delayTime.value = (phaseShift / 360) / baseFreq;
+                }
+            }
+
+            updatePhaseShift() {
+                if (!this.isPlaying || !this.phaseDelayNode) return;
+
+                const baseFreq = parseFloat(document.getElementById('baseFreq').value);
+                const phaseShift = parseFloat(document.getElementById('phaseShift').value);
+                this.phaseDelayNode.delayTime.value = (phaseShift / 360) / baseFreq;
             }
 
             stopSession() {
@@ -706,6 +758,10 @@
                 if (this.rightOscillator) {
                     this.rightOscillator.stop();
                     this.rightOscillator = null;
+                }
+                if (this.phaseDelayNode) {
+                    this.phaseDelayNode.disconnect();
+                    this.phaseDelayNode = null;
                 }
                 if (this.isochronicOscillator) {
                     this.isochronicOscillator.stop();
