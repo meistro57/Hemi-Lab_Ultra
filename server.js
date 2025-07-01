@@ -1,6 +1,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const WebSocket = require('ws');
 
 const port = process.env.PORT || 3000;
 const root = path.join(__dirname);
@@ -30,6 +31,25 @@ const server = http.createServer((req, res) => {
     const type = mimeTypes[ext] || 'application/octet-stream';
     res.writeHead(200, { 'Content-Type': type });
     res.end(data);
+  });
+});
+
+// Start WebSocket server for EEG data and browser clients. The Python
+// EEG bridge should connect here and send JSON messages that will be
+// forwarded to any connected browsers.
+const wss = new WebSocket.Server({ server });
+
+function broadcast(sender, data) {
+  wss.clients.forEach(client => {
+    if (client !== sender && client.readyState === WebSocket.OPEN) {
+      client.send(data);
+    }
+  });
+}
+
+wss.on('connection', ws => {
+  ws.on('message', data => {
+    broadcast(ws, data);
   });
 });
 
