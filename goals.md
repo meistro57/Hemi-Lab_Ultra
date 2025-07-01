@@ -1,4 +1,4 @@
-# 🧠 Hemi-Lab: Gateway Terminal - Technical Project Brief
+# 🧠 Hemi-Lab Ultra - Technical Project Brief
 
 ## **Project Overview**
 A browser-based consciousness exploration platform that combines binaural beat audio therapy,
