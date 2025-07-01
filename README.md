@@ -24,3 +24,6 @@ For best results:
 - Journal your experiences after each session
 
 The deeper states (Focus 15, 21, 23+) may produce profound experiences. Trust the process and document everything.
+
+![Screenshot from 2025-06-30 22-45-42](https://github.com/user-attachments/assets/50637949-1276-4756-80b6-c28c6505e56f)
+
