@@ -1,4 +1,4 @@
-# Heli-Lab Ultra
+# Hemi-Lab Ultra
 
 Hemi-Lab Gateway Terminal is a browser-based tool for exploring altered states of consciousness using audio guidance and interactive feedback. Open `Hemi-Lab_Ultra++.html` in a modern browser to begin.
 
