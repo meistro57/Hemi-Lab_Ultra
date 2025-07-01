@@ -1,9 +1,9 @@
 # TODO
 
-- [ ] Implement core audio engine with binaural and isochronic options
-- [ ] Add focus presets and basic UI controls
-- [ ] Add REBAL visualization and session timer
-- [ ] Implement local journal storage and statistics
+- [x] Implement core audio engine with binaural and isochronic options
+- [x] Add focus presets and basic UI controls
+- [x] Add REBAL visualization and session timer
+- [x] Implement local journal storage and statistics
 - [ ] Build session composer for layering sounds
 - [ ] Add advanced breath coaching patterns
 - [x] Implement pattern analysis algorithms

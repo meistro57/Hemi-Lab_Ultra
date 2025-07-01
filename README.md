@@ -6,7 +6,7 @@ Hemi-Lab Ultra is a lightweight browser application for exploring altered states
 
 ## Quick Start
 1. Open `Hemi-Lab_Ultra++.html` directly in a modern browser; or
-2. Run `node server.js` and visit [http://localhost:3000](http://localhost:3000) for a local server.
+2. Install dependencies with `npm install`, run `node server.js` and visit [http://localhost:3000](http://localhost:3000) for a local server.
 
 ## EEG Bridge
 A Python script for streaming OpenBCI EEG data is available in `python/eeg_bridge.py`.
@@ -21,7 +21,7 @@ It broadcasts real‑time band power metrics over a WebSocket server.
    ```bash
    python python/eeg_bridge.py
    ```
-3. Listen on `ws://localhost:8765` for JSON data.
+3. Listen on `ws://localhost:3000` for JSON data (adjust `ws_port` in the script if needed).
 
 ## Features
 - **Binaural Beat Engine** – custom frequency entrainment with phase shifting
@@ -32,6 +32,7 @@ It broadcasts real‑time band power metrics over a WebSocket server.
 - **Pattern Analysis** – discover optimal practice trends
 - **Affirmation Layer** – spoken positive cues during sessions
 - **Data Import/Export** – backup and restore your journal history
+- **Real-Time EEG Feedback** – optional audio adjustments via WebSocket
 
 ## Usage
 1. Select your desired focus level.
