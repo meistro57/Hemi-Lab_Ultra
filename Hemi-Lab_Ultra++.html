@@ -415,14 +415,47 @@
             padding: 20px;
         }
 
-        .analysis-content {
-            background: #111;
-            padding: 20px;
+.analysis-content {
+    background: #111;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+        .github-link {
+            display: inline-block;
+            margin-top: 10px;
+            color: #00ff88;
+            text-decoration: none;
+        }
+
+        .github-link:hover {
+            text-decoration: underline;
+        }
+
+        .instructions {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .instructions details {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 136, 0.3);
             border-radius: 8px;
+            padding: 10px;
+            text-align: left;
             max-width: 600px;
-            width: 100%;
-            max-height: 80vh;
-            overflow-y: auto;
+        }
+
+        .instructions summary {
+            cursor: pointer;
+            font-weight: bold;
+            color: #00ff88;
+            outline: none;
         }
 
         @media (max-width: 768px) {
@@ -447,7 +480,34 @@
         <header class="header">
             <h1>🧠 Hemi-Lab Ultra</h1>
             <p>Consciousness Exploration • Science • Spirit • Precision</p>
+            <a href="https://github.com/meistro57/Hemi-Lab_Ultra" target="_blank" class="github-link">View on GitHub</a>
         </header>
+
+        <div class="instructions">
+            <details>
+                <summary>📜 Instructions</summary>
+                <p>🧠 Welcome to Hemi-Lab Gateway Terminal</p>
+                <p>Your consciousness exploration platform is ready. Features available:</p>
+                <ul>
+                    <li>Binaural Beat Engine - Create custom frequency entrainment</li>
+                    <li>Focus Level Navigator - Monroe Institute inspired states</li>
+                    <li>REBAL Energy Shield - Resonant protection visualization</li>
+                    <li>Breath Coach - Synchronized breathing guidance</li>
+                    <li>Session Journal - Track your journey and insights</li>
+                    <li>Pattern Analysis - Discover your optimal practice times</li>
+                    <li>Affirmation Layer - Spoken positive cues</li>
+                </ul>
+                <p>🚀 Select a Focus Level and click "Begin Session" to start your exploration.</p>
+                <p>For best results:</p>
+                <ul>
+                    <li>Use quality headphones</li>
+                    <li>Find a quiet, comfortable space</li>
+                    <li>Set an intention before beginning</li>
+                    <li>Journal your experiences after each session</li>
+                </ul>
+                <p>The deeper states (Focus 15, 21, 23+) may produce profound experiences. Trust the process and document everything.</p>
+            </details>
+        </div>
 
         <div class="main-interface">
             <div class="visualization-area">
