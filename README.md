@@ -28,5 +28,4 @@ The deeper states (Focus 15, 21, 23+) may produce profound experiences. Trust th
 # Local Development Server
 Run `node server.js` and open [http://localhost:3000](http://localhost:3000) to use the app locally.
 
-![Screenshot from 2025-06-30 22-45-42](https://github.com/user-attachments/assets/50637949-1276-4756-80b6-c28c6505e56f)
-
+![image](https://github.com/user-attachments/assets/3b1e6a4a-7a4b-434e-bc85-f0ee7ca67da9)
