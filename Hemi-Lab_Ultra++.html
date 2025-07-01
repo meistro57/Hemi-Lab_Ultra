@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧠 Hemi-Lab: Gateway Terminal</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: radial-gradient(circle at 50% 50%, #0a0a2e 0%, #000000 100%);
+            color: #ffffff;
+            font-family: 'Courier New', monospace;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px 0;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(45deg, #00ff88, #0099ff, #ff0088);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            text-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
+        }
+
+        .header p {
+            opacity: 0.8;
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+        }
+
+        .main-interface {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .control-panel {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+        }
+
+        .visualization-area {
+            position: relative;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 153, 255, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            min-height: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .focus-selector {
+            margin-bottom: 25px;
+        }
+
+        .focus-selector h3 {
+            color: #00ff88;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .focus-levels {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .focus-btn {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            color: #ffffff;
+            padding: 12px 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .focus-btn:hover {
+            background: rgba(0, 255, 136, 0.2);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.4);
+        }
+
+        .focus-btn.active {
+            background: rgba(0, 255, 136, 0.3);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.6);
+        }
+
+        .audio-controls {
+            margin-bottom: 25px;
+        }
+
+        .audio-controls h3 {
+            color: #0099ff;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #cccccc;
+            font-size: 0.9rem;
+        }
+
+        .slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #00ff88;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+
+        .session-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #00ff88, #0099ff);
+            color: #000000;
+            font-weight: bold;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .rebal-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+        }
+
+        .rebal-orb {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(0, 255, 136, 0.6), rgba(0, 153, 255, 0.3), rgba(255, 0, 136, 0.2));
+            box-shadow: 
+                0 0 50px rgba(0, 255, 136, 0.4),
+                inset 0 0 50px rgba(0, 153, 255, 0.2);
+            animation: rebalPulse 4s ease-in-out infinite;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .rebal-orb::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(transparent, rgba(0, 255, 136, 0.1), transparent);
+            animation: rebalRotate 8s linear infinite;
+        }
+
+        @keyframes rebalPulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 1; }
+        }
+
+        @keyframes rebalRotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .breath-coach {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .breath-coach.active {
+            opacity: 1;
+        }
+
+        .breath-text {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: #00ff88;
+        }
+
+        .breath-bar {
+            width: 200px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .breath-progress {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #0099ff);
+            transition: width linear;
+        }
+
+        .session-info {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            border-left: 4px solid #00ff88;
+        }
+
+        .journal-section {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 0, 136, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+        }
+
+        .journal-section h3 {
+            color: #ff0088;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+        }
+
+        .journal-form {
+            display: grid;
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-group label {
+            color: #cccccc;
+            font-size: 0.9rem;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #ffffff;
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .stats-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-offline { background: #666; }
+        .status-active { background: #00ff88; animation: pulse 2s infinite; }
+        .status-contact { background: #ff0088; animation: pulse 1s infinite; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @media (max-width: 768px) {
+            .main-interface {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .rebal-container {
+                width: 250px;
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🧠 Hemi-Lab: Gateway Terminal</h1>
+            <p>Consciousness Exploration • Science • Spirit • Precision</p>
+        </header>
+
+        <div class="main-interface">
+            <div class="visualization-area">
+                <div class="rebal-container">
+                    <div class="rebal-orb" id="rebalOrb"></div>
+                </div>
+                <div class="breath-coach" id="breathCoach">
+                    <div class="breath-text" id="breathText">Breathe In</div>
+                    <div class="breath-bar">
+                        <div class="breath-progress" id="breathProgress"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-panel">
+                <div class="focus-selector">
+                    <h3>🌌 Focus Level Navigator</h3>
+                    <div class="focus-levels">
+                        <button class="focus-btn" data-focus="10">Focus 10<br><small>Body Asleep</small></button>
+                        <button class="focus-btn" data-focus="12">Focus 12<br><small>Expanded</small></button>
+                        <button class="focus-btn" data-focus="15">Focus 15<br><small>No-Time</small></button>
+                        <button class="focus-btn" data-focus="21">Focus 21<br><small>Threshold</small></button>
+                        <button class="focus-btn" data-focus="23">Focus 23+<br><small>Contact</small></button>
+                        <button class="focus-btn" data-focus="custom">Custom<br><small>Compose</small></button>
+                    </div>
+                </div>
+
+                <div class="audio-controls">
+                    <h3>🔊 Audio Engine</h3>
+                    <div class="control-group">
+                        <label>Base Frequency (Hz): <span id="baseFreqValue">100</span></label>
+                        <input type="range" class="slider" id="baseFreq" min="40" max="200" value="100">
+                    </div>
+                    <div class="control-group">
+                        <label>Beat Frequency (Hz): <span id="beatFreqValue">8</span></label>
+                        <input type="range" class="slider" id="beatFreq" min="0.5" max="40" value="8" step="0.5">
+                    </div>
+                    <div class="control-group">
+                        <label>Volume: <span id="volumeValue">50</span>%</label>
+                        <input type="range" class="slider" id="volume" min="0" max="100" value="50">
+                    </div>
+                    <div class="control-group">
+                        <label>
+                            <input type="checkbox" id="isochronicMode"> Isochronic Pulse Layer
+                        </label>
+                    </div>
+                    <div class="control-group">
+                        <label>
+                            <input type="checkbox" id="rebalMode" checked> REBAL Energy Shield
+                        </label>
+                    </div>
+                    <div class="control-group">
+                        <label>
+                            <input type="checkbox" id="breathCoachMode"> Breath Coach
+                        </label>
+                    </div>
+                </div>
+
+                <div class="session-controls">
+                    <button class="btn btn-primary" id="startBtn">🚀 Begin Session</button>
+                    <button class="btn btn-secondary" id="stopBtn">⏹️ Stop</button>
+                </div>
+
+                <div class="session-info" id="sessionInfo">
+                    <div><span class="status-indicator status-offline" id="statusIndicator"></span><strong>Status:</strong> <span id="sessionStatus">Ready</span></div>
+                    <div><strong>Timer:</strong> <span id="sessionTimer">00:00</span></div>
+                    <div><strong>Current Focus:</strong> <span id="currentFocus">None Selected</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="journal-section">
+            <h3>📓 Session Journal & Insights</h3>
+            <div class="journal-form">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div class="form-group">
+                        <label>Focus Level Used</label>
+                        <select id="journalFocus">
+                            <option value="">Select Focus Level</option>
+                            <option value="10">Focus 10 - Body Asleep</option>
+                            <option value="12">Focus 12 - Expanded</option>
+                            <option value="15">Focus 15 - No-Time</option>
+                            <option value="21">Focus 21 - Threshold</option>
+                            <option value="23+">Focus 23+ - Contact</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Mood Before (1-10)</label>
+                        <input type="number" id="moodBefore" min="1" max="10" placeholder="5">
+                    </div>
+                    <div class="form-group">
+                        <label>Mood After (1-10)</label>
+                        <input type="number" id="moodAfter" min="1" max="10" placeholder="7">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Session Reflection</label>
+                    <textarea id="reflection" placeholder="Describe your experience, any visions, sensations, insights, or contact experiences..."></textarea>
+                </div>
+                <button class="btn btn-primary" id="saveJournal">💾 Save Entry</button>
+            </div>
+
+            <div class="stats-display">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalSessions">0</div>
+                    <div class="stat-label">Total Sessions</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalTime">0m</div>
+                    <div class="stat-label">Total Time</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="favoriteLevel">-</div>
+                    <div class="stat-label">Favorite Focus</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="contactEvents">0</div>
+                    <div class="stat-label">Contact Events</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class HemiLabGateway {
+            constructor() {
+                this.audioContext = null;
+                this.leftOscillator = null;
+                this.rightOscillator = null;
+                this.isochronicOscillator = null;
+                this.gainNode = null;
+                this.isPlaying = false;
+                this.sessionStartTime = null;
+                this.sessionTimer = null;
+                this.currentFocusLevel = null;
+                this.breathCycle = null;
+                
+                this.focusPresets = {
+                    10: { baseFreq: 100, beatFreq: 7.5, description: "Body asleep, mind awake" },
+                    12: { baseFreq: 110, beatFreq: 9, description: "Expanded awareness state" },
+                    15: { baseFreq: 80, beatFreq: 1, description: "No-time zone" },
+                    21: { baseFreq: 90, beatFreq: 4, description: "Gateway threshold" },
+                    "23+": { baseFreq: 70, beatFreq: 2.5, description: "Contact/multidimensional states" }
+                };
+
+                this.initializeUI();
+                this.loadUserData();
+            }
+
+            async initializeAudio() {
+                if (!this.audioContext) {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    this.gainNode = this.audioContext.createGain();
+                    this.gainNode.connect(this.audioContext.destination);
+                }
+
+                if (this.audioContext.state === 'suspended') {
+                    await this.audioContext.resume();
+                }
+            }
+
+            initializeUI() {
+                // Focus level selection
+                document.querySelectorAll('.focus-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const level = e.target.dataset.focus;
+                        this.selectFocusLevel(level);
+                    });
+                });
+
+                // Audio controls
+                document.getElementById('baseFreq').addEventListener('input', (e) => {
+                    document.getElementById('baseFreqValue').textContent = e.target.value;
+                    if (this.isPlaying) this.updateFrequencies();
+                });
+
+                document.getElementById('beatFreq').addEventListener('input', (e) => {
+                    document.getElementById('beatFreqValue').textContent = e.target.value;
+                    if (this.isPlaying) this.updateFrequencies();
+                });
+
+                document.getElementById('volume').addEventListener('input', (e) => {
+                    document.getElementById('volumeValue').textContent = e.target.value;
+                    if (this.gainNode) {
+                        this.gainNode.gain.value = e.target.value / 100;
+                    }
+                });
+
+                // Session controls
+                document.getElementById('startBtn').addEventListener('click', () => this.startSession());
+                document.getElementById('stopBtn').addEventListener('click', () => this.stopSession());
+
+                // Breath coach toggle
+                document.getElementById('breathCoachMode').addEventListener('change', (e) => {
+                    if (e.target.checked && this.isPlaying) {
+                        this.startBreathCoach();
+                    } else {
+                        this.stopBreathCoach();
+                    }
+                });
+
+                // Journal saving
+                document.getElementById('saveJournal').addEventListener('click', () => this.saveJournalEntry());
+            }
+
+            selectFocusLevel(level) {
+                document.querySelectorAll('.focus-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelector(`[data-focus="${level}"]`).classList.add('active');
+                
+                this.currentFocusLevel = level;
+                document.getElementById('currentFocus').textContent = `Focus ${level}`;
+
+                if (this.focusPresets[level]) {
+                    const preset = this.focusPresets[level];
+                    document.getElementById('baseFreq').value = preset.baseFreq;
+                    document.getElementById('beatFreq').value = preset.beatFreq;
+                    document.getElementById('baseFreqValue').textContent = preset.baseFreq;
+                    document.getElementById('beatFreqValue').textContent = preset.beatFreq;
+                    
+                    if (this.isPlaying) this.updateFrequencies();
+                }
+            }
+
+            async startSession() {
+                try {
+                    await this.initializeAudio();
+                    
+                    const baseFreq = parseFloat(document.getElementById('baseFreq').value);
+                    const beatFreq = parseFloat(document.getElementById('beatFreq').value);
+                    const volume = parseFloat(document.getElementById('volume').value) / 100;
+
+                    // Create binaural beat
+                    this.leftOscillator = this.audioContext.createOscillator();
+                    this.rightOscillator = this.audioContext.createOscillator();
+
+                    const leftGain = this.audioContext.createGain();
+                    const rightGain = this.audioContext.createGain();
+                    const merger = this.audioContext.createChannelMerger(2);
+
+                    this.leftOscillator.frequency.value = baseFreq;
+                    this.rightOscillator.frequency.value = baseFreq + beatFreq;
+
+                    this.leftOscillator.connect(leftGain);
+                    this.rightOscillator.connect(rightGain);
+                    leftGain.connect(merger, 0, 0);
+                    rightGain.connect(merger, 0, 1);
+                    merger.connect(this.gainNode);
+
+                    leftGain.gain.value = volume * 0.5;
+                    rightGain.gain.value = volume * 0.5;
+
+                    this.leftOscillator.start();
+                    this.rightOscillator.start();
+
+                    // Isochronic pulse if enabled
+                    if (document.getElementById('isochronicMode').checked) {
+                        this.startIsochronicPulse(beatFreq, volume);
+                    }
+
+                    this.isPlaying = true;
+                    this.sessionStartTime = Date.now();
+                    this.updateSessionStatus('Active');
+                    this.startSessionTimer();
+
+                    if (document.getElementById('breathCoachMode').checked) {
+                        this.startBreathCoach();
+                    }
+
+                    // Visual effects
+                    this.animateREBAL();
+
+                    document.getElementById('startBtn').textContent = '🔄 Session Active';
+                    document.getElementById('startBtn').disabled = true;
+
+                } catch (error) {
+                    console.error('Error starting session:', error);
+                    alert('Error starting audio session. Please check your browser permissions.');
+                }
+            }
+
+            startIsochronicPulse(frequency, volume) {
+                this.isochronicOscillator = this.audioContext.createOscillator();
+                const isoGain = this.audioContext.createGain();
+                
+                this.isochronicOscillator.type = 'square';
+                this.isochronicOscillator.frequency.value = frequency;
+                
+                this.isochronicOscillator.connect(isoGain);
+                isoGain.connect(this.gainNode);
+                isoGain.gain.value = volume * 0.2;
+                
+                this.isochronicOscillator.start();
+            }
+
+            updateFrequencies() {
+                if (!this.isPlaying) return;
+
+                const baseFreq = parseFloat(document.getElementById('baseFreq').value);
+                const beatFreq = parseFloat(document.getElementById('beatFreq').value);
+
+                if (this.leftOscillator && this.rightOscillator) {
+                    this.leftOscillator.frequency.value = baseFreq;
+                    this.rightOscillator.frequency.value = baseFreq + beatFreq;
+                }
+
+                if (this.isochronicOscillator) {
+                    this.isochronicOscillator.frequency.value = beatFreq;
+                }
+            }
+
+            stopSession() {
+                if (this.leftOscillator) {
+                    this.leftOscillator.stop();
+                    this.leftOscillator = null;
+                }
+                if (this.rightOscillator) {
+                    this.rightOscillator.stop();
+                    this.rightOscillator = null;
+                }
+                if (this.isochronicOscillator) {
+                    this.isochronicOscillator.stop();
+                    this.isochronicOscillator = null;
+                }
+
+                this.isPlaying = false;
+                this.updateSessionStatus('Complete');
+                this.stopSessionTimer();
+                this.stopBreathCoach();
+
+                document.getElementById('startBtn').textContent = '🚀 Begin Session';
+                document.getElementById('startBtn').disabled = false;
+
+                // Auto-populate journal
+                if (this.currentFocusLevel) {
+                    document.getElementById('journalFocus').value = this.currentFocusLevel;
+                }
+            }
+
+            startSessionTimer() {
+                this.sessionTimer = setInterval(() => {
+                    const elapsed = Math.floor((Date.now() - this.sessionStartTime) / 1000);
+                    const minutes = Math.floor(elapsed / 60);
+                    const seconds = elapsed % 60;
+                    document.getElementById('sessionTimer').textContent = 
+                        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }, 1000);
+            }
+
+            stopSessionTimer() {
+                if (this.sessionTimer) {
+                    clearInterval(this.sessionTimer);
+                    this.sessionTimer = null;
+                }
+            }
+
+            startBreathCoach() {
+                const breathCoach = document.getElementById('breathCoach');
+                const breathText = document.getElementById('breathText');
+                const breathProgress = document.getElementById('breathProgress');
+                
+                breathCoach.classList.add('active');
+                
+                let phase = 0; // 0: inhale, 1: hold, 2: exhale, 3: hold
+                const durations = [4000, 4000, 4000, 4000]; // 4-4-4-4 box breathing
+                const phases = ['Breathe In', 'Hold', 'Breathe Out', 'Hold'];
+                
+                const cycleBreath = () => {
+                    if (!document.getElementById('breathCoachMode').checked || !this.isPlaying) return;
+                    
+                    breathText.textContent = phases[phase];
+                    breathProgress.style.transition = `width ${durations[phase]}ms linear`;
+                    breathProgress.style.width = '100%';
+                    
+                    setTimeout(() => {
+                        breathProgress.style.transition = 'none';
+                        breathProgress.style.width = '0%';
+                        phase = (phase + 1) % 4;
+                        setTimeout(cycleBreath, 100);
+                    }, durations[phase]);
+                };
+                
+                cycleBreath();
+            }
+
+            stopBreathCoach() {
+                document.getElementById('breathCoach').classList.remove('active');
+            }
+
+            animateREBAL() {
+                const orb = document.getElementById('rebalOrb');
+                if (document.getElementById('rebalMode').checked && this.isPlaying) {
+                    orb.style.animation = 'rebalPulse 4s ease-in-out infinite, rebalRotate 8s linear infinite';
+                    setTimeout(() => this.animateREBAL(), 100);
+                } else {
+                    orb.style.animation = 'none';
+                }
+            }
+
+            updateSessionStatus(status) {
+                document.getElementById('sessionStatus').textContent = status;
+                const indicator = document.getElementById('statusIndicator');
+                indicator.className = 'status-indicator ' + 
+                    (status === 'Active' ? 'status-active' : 
+                     status === 'Contact' ? 'status-contact' : 'status-offline');
+            }
+
+            saveJournalEntry() {
+                const entry = {
+                    timestamp: new Date().toISOString(),
+                    focusLevel: document.getElementById('journalFocus').value,
+                    moodBefore: parseInt(document.getElementById('moodBefore').value) || null,
+                    moodAfter: parseInt(document.getElementById('moodAfter').value) || null,
+                    reflection: document.getElementById('reflection').value,
+                    sessionDuration: this.getLastSessionDuration()
+                };
+
+                if (!entry.focusLevel || !entry.reflection.trim()) {
+                    alert('Please select a focus level and add your reflection.');
+                    return;
+                }
+
+                let journals = JSON.parse(localStorage.getItem('hemilab_journals') || '[]');
+                journals.push(entry);
+                localStorage.setItem('hemilab_journals', JSON.stringify(journals));
+
+                // Update stats
+                this.updateStats();
+
+                // Clear form
+                document.getElementById('journalFocus').value = '';
+                document.getElementById('moodBefore').value = '';
+                document.getElementById('moodAfter').value = '';
+                document.getElementById('reflection').value = '';
+
+                alert('✨ Journal entry saved! Your consciousness journey is being tracked.');
+
+                // Check for contact event keywords
+                this.analyzeForContactEvent(entry.reflection);
+            }
+
+            getLastSessionDuration() {
+                if (this.sessionStartTime) {
+                    return Math.floor((Date.now() - this.sessionStartTime) / 1000);
+                }
+                return 0;
+            }
+
+            analyzeForContactEvent(reflection) {
+                const contactKeywords = [
+                    'entity', 'being', 'presence', 'voice', 'message', 'contact',
+                    'communication', 'guide', 'spirit', 'other', 'they', 'spoke',
+                    'told', 'showed', 'revealed', 'download', 'transmission'
+                ];
+
+                const text = reflection.toLowerCase();
+                const hasContactKeywords = contactKeywords.some(keyword => text.includes(keyword));
+
+                if (hasContactKeywords) {
+                    let userData = JSON.parse(localStorage.getItem('hemilab_userdata') || '{}');
+                    userData.contactEvents = (userData.contactEvents || 0) + 1;
+                    localStorage.setItem('hemilab_userdata', JSON.stringify(userData));
+                    
+                    this.updateSessionStatus('Contact');
+                    setTimeout(() => {
+                        alert('🛸 Contact event detected in your reflection! This has been logged for analysis.');
+                    }, 500);
+                }
+            }
+
+            loadUserData() {
+                this.updateStats();
+            }
+
+            updateStats() {
+                const journals = JSON.parse(localStorage.getItem('hemilab_journals') || '[]');
+                const userData = JSON.parse(localStorage.getItem('hemilab_userdata') || '{}');
+
+                // Total sessions
+                document.getElementById('totalSessions').textContent = journals.length;
+
+                // Total time
+                const totalMinutes = journals.reduce((sum, entry) => {
+                    return sum + Math.floor((entry.sessionDuration || 0) / 60);
+                }, 0);
+                document.getElementById('totalTime').textContent = totalMinutes + 'm';
+
+                // Favorite focus level
+                const focusCount = {};
+                journals.forEach(entry => {
+                    if (entry.focusLevel) {
+                        focusCount[entry.focusLevel] = (focusCount[entry.focusLevel] || 0) + 1;
+                    }
+                });
+                const favoriteLevel = Object.keys(focusCount).reduce((a, b) => 
+                    focusCount[a] > focusCount[b] ? a : b, '-');
+                document.getElementById('favoriteLevel').textContent = 
+                    favoriteLevel !== '-' ? `Focus ${favoriteLevel}` : '-';
+
+                // Contact events
+                document.getElementById('contactEvents').textContent = userData.contactEvents || 0;
+            }
+
+            // Advanced features for future phases
+            initializeContactMode() {
+                // Probability-based contact event triggers
+                if (this.currentFocusLevel === '21' || this.currentFocusLevel === '23+') {
+                    const contactProbability = Math.random();
+                    if (contactProbability > 0.85 && this.isPlaying) {
+                        setTimeout(() => {
+                            this.triggerContactEvent();
+                        }, Math.random() * 300000 + 600000); // 10-15 minutes into session
+                    }
+                }
+            }
+
+            triggerContactEvent() {
+                this.updateSessionStatus('Contact');
+                
+                // Subtle audio modification
+                if (this.leftOscillator && this.rightOscillator) {
+                    const originalLeft = this.leftOscillator.frequency.value;
+                    const originalRight = this.rightOscillator.frequency.value;
+                    
+                    // Brief frequency shift
+                    this.leftOscillator.frequency.exponentialRampToValueAtTime(
+                        originalLeft * 0.98, this.audioContext.currentTime + 2
+                    );
+                    this.rightOscillator.frequency.exponentialRampToValueAtTime(
+                        originalRight * 1.02, this.audioContext.currentTime + 2
+                    );
+                    
+                    setTimeout(() => {
+                        if (this.leftOscillator && this.rightOscillator) {
+                            this.leftOscillator.frequency.exponentialRampToValueAtTime(
+                                originalLeft, this.audioContext.currentTime + 1
+                            );
+                            this.rightOscillator.frequency.exponentialRampToValueAtTime(
+                                originalRight, this.audioContext.currentTime + 1
+                            );
+                        }
+                    }, 3000);
+                }
+
+                // Visual contact indicator
+                const orb = document.getElementById('rebalOrb');
+                orb.style.boxShadow = `
+                    0 0 100px rgba(255, 0, 136, 0.8),
+                    inset 0 0 50px rgba(255, 255, 255, 0.3)
+                `;
+                
+                setTimeout(() => {
+                    orb.style.boxShadow = `
+                        0 0 50px rgba(0, 255, 136, 0.4),
+                        inset 0 0 50px rgba(0, 153, 255, 0.2)
+                    `;
+                }, 5000);
+            }
+
+            // Pattern analysis for future implementation
+            analyzeSessionPatterns() {
+                const journals = JSON.parse(localStorage.getItem('hemilab_journals') || '[]');
+                
+                // Analyze recurring themes, optimal times, mood patterns
+                const patterns = {
+                    bestTimes: this.findOptimalSessionTimes(journals),
+                    moodCorrelations: this.analyzeMoodPatterns(journals),
+                    progressionPath: this.trackFocusProgression(journals)
+                };
+                
+                return patterns;
+            }
+
+            findOptimalSessionTimes(journals) {
+                // Analyze when user has best experiences
+                const timeMap = {};
+                journals.forEach(entry => {
+                    const hour = new Date(entry.timestamp).getHours();
+                    const improvement = (entry.moodAfter || 5) - (entry.moodBefore || 5);
+                    timeMap[hour] = (timeMap[hour] || []).concat(improvement);
+                });
+                
+                return Object.keys(timeMap).map(hour => ({
+                    hour: parseInt(hour),
+                    avgImprovement: timeMap[hour].reduce((a, b) => a + b, 0) / timeMap[hour].length
+                })).sort((a, b) => b.avgImprovement - a.avgImprovement);
+            }
+
+            analyzeMoodPatterns(journals) {
+                // Track mood improvement patterns by focus level
+                const patterns = {};
+                journals.forEach(entry => {
+                    if (entry.moodBefore && entry.moodAfter && entry.focusLevel) {
+                        const level = entry.focusLevel;
+                        const improvement = entry.moodAfter - entry.moodBefore;
+                        patterns[level] = (patterns[level] || []).concat(improvement);
+                    }
+                });
+                
+                return patterns;
+            }
+
+            trackFocusProgression(journals) {
+                // See how user progresses through focus levels over time
+                return journals.map(entry => ({
+                    date: entry.timestamp,
+                    level: entry.focusLevel,
+                    quality: (entry.moodAfter || 5) - (entry.moodBefore || 5)
+                }));
+            }
+        }
+
+        // Initialize the application
+        let app;
+        
+        // Wait for user interaction before initializing audio context
+        document.addEventListener('click', () => {
+            if (!app) {
+                app = new HemiLabGateway();
+            }
+        }, { once: true });
+
+        // Initialize UI immediately
+        document.addEventListener('DOMContentLoaded', () => {
+            // Create app instance for UI, audio will initialize on first interaction
+            app = new HemiLabGateway();
+            
+            // Add some initial guidance
+            const welcomeMessage = `
+🧠 Welcome to Hemi-Lab Gateway Terminal
+
+Your consciousness exploration platform is ready. Features available:
+
+✅ Binaural Beat Engine - Create custom frequency entrainment
+✅ Focus Level Navigator - Monroe Institute inspired states  
+✅ REBAL Energy Shield - Resonant protection visualization
+✅ Breath Coach - Synchronized breathing guidance
+✅ Session Journal - Track your journey and insights
+✅ Pattern Analysis - Discover your optimal practice times
+
+🚀 Select a Focus Level and click "Begin Session" to start your exploration.
+
+For best results:
+• Use quality headphones
+• Find a quiet, comfortable space  
+• Set an intention before beginning
+• Journal your experiences after each session
+
+The deeper states (Focus 15, 21, 23+) may produce profound experiences. Trust the process and document everything.
+
+Safe travels, consciousness explorer. ✨
+            `;
+            
+            console.log(welcomeMessage);
+        });
+
+        // Add some keyboard shortcuts for advanced users
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case ' ':
+                        e.preventDefault();
+                        if (app && app.isPlaying) {
+                            app.stopSession();
+                        } else if (app) {
+                            app.startSession();
+                        }
+                        break;
+                    case 'j':
+                        e.preventDefault();
+                        document.getElementById('reflection').focus();
+                        break;
+                }
+            }
+        });
+
+        // Easter egg for advanced users
+        let konamiCode = [];
+        const konamiSequence = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'KeyB', 'KeyA'];
+        
+        document.addEventListener('keydown', (e) => {
+            konamiCode.push(e.code);
+            if (konamiCode.length > 10) konamiCode.shift();
+            
+            if (JSON.stringify(konamiCode) === JSON.stringify(konamiSequence)) {
+                alert('🛸 Advanced Contact Protocols Unlocked\n\nHidden frequencies now available in Focus 27+\nQuantum entanglement mode enabled\nRemote viewing assistance activated\n\n"The Explorer becomes the Explored" - TMI');
+                konamiCode = [];
+            }
+        });
+    </script>
+</body>
+</html>
