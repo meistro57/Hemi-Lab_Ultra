@@ -229,9 +229,11 @@
                 0 0 60px rgba(0, 255, 136, 0.5),
                 inset 0 0 60px rgba(0, 153, 255, 0.3);
             filter: drop-shadow(0 0 15px rgba(255, 0, 136, 0.4));
-            animation: rebalPulse 4s ease-in-out infinite;
             position: relative;
             overflow: hidden;
+            will-change: transform, opacity;
+            transform: translateZ(0);
+            backface-visibility: hidden;
         }
 
         .rebal-orb::before {
@@ -242,6 +244,13 @@
             width: 200%;
             height: 200%;
             background: conic-gradient(transparent, rgba(0, 255, 136, 0.1), transparent);
+        }
+
+        .rebal-orb.animate {
+            animation: rebalPulse 4s ease-in-out infinite;
+        }
+
+        .rebal-orb.animate::before {
             animation: rebalRotate 8s linear infinite;
         }
 
@@ -713,6 +722,10 @@
                     }
                 });
 
+                document.getElementById('rebalMode').addEventListener('change', () => {
+                    this.animateREBAL();
+                });
+
                 document.getElementById('driftMode').addEventListener('change', (e) => {
                     if (this.engine) {
                         if (e.target.checked) {
@@ -975,6 +988,7 @@
                 }
 
                 this.isPlaying = false;
+                this.animateREBAL();
                 this.updateSessionStatus('Complete');
                 this.stopSessionTimer();
                 this.stopBreathCoach();
@@ -1051,10 +1065,9 @@
             animateREBAL() {
                 const orb = document.getElementById('rebalOrb');
                 if (document.getElementById('rebalMode').checked && this.isPlaying) {
-                    orb.style.animation = 'rebalPulse 4s ease-in-out infinite, rebalRotate 8s linear infinite';
-                    setTimeout(() => this.animateREBAL(), 100);
+                    orb.classList.add('animate');
                 } else {
-                    orb.style.animation = 'none';
+                    orb.classList.remove('animate');
                 }
             }
 

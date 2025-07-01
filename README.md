@@ -27,6 +27,7 @@ It broadcasts real‑time band power metrics over a WebSocket server.
 - **Binaural Beat Engine** – custom frequency entrainment with phase shifting
 - **Focus Level Navigator** – Monroe Institute inspired presets
 - **REBAL Energy Shield** – animated protection visualization
+- **GPU-Accelerated Visuals** – smoother REBAL animation using CSS transforms
 - **Breath Coach** – synchronized breathing prompts
 - **Session Journal** – record mood and insights
 - **Pattern Analysis** – discover optimal practice trends
