@@ -568,6 +568,9 @@
                 </div>
             </div>
             <button class="btn btn-secondary" id="analyzePatterns" style="margin-top:15px;">🔍 Analyze Patterns</button>
+            <button class="btn btn-secondary" id="exportData" style="margin-top:15px;">⬇️ Export Data</button>
+            <label class="btn btn-secondary" for="importFile" style="margin-top:15px;">⬆️ Import Data</label>
+            <input type="file" id="importFile" accept="application/json" style="display:none;">
         </div>
         <div class="analysis-overlay" id="analysisOverlay">
             <div class="analysis-content">
@@ -692,6 +695,10 @@
                 document.getElementById('closeAnalysis').addEventListener('click', () => {
                     document.getElementById('analysisOverlay').style.display = 'none';
                 });
+
+                // Data import/export
+                document.getElementById('exportData').addEventListener('click', () => this.exportData());
+                document.getElementById('importFile').addEventListener('change', (e) => this.importData(e.target.files[0]));
             }
 
             selectFocusLevel(level) {
@@ -1028,6 +1035,37 @@
 
                 // Contact events
                 document.getElementById('contactEvents').textContent = userData.contactEvents || 0;
+            }
+
+            exportData() {
+                const data = localStorage.getItem('hemilab_journals') || '[]';
+                const blob = new Blob([data], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'hemilab_journals.json';
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+
+            importData(file) {
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        if (Array.isArray(data)) {
+                            localStorage.setItem('hemilab_journals', JSON.stringify(data));
+                            this.updateStats();
+                            alert('📥 Journal data imported successfully!');
+                        } else {
+                            throw new Error('Invalid format');
+                        }
+                    } catch (err) {
+                        alert('Failed to import data: ' + err.message);
+                    }
+                };
+                reader.readAsText(file);
             }
 
             // Advanced features for future phases

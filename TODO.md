@@ -8,7 +8,7 @@
 - [ ] Add advanced breath coaching patterns
 - [x] Implement pattern analysis algorithms
 - [ ] Add contact mode triggers
-- [ ] Add data import/export system
+- [x] Add data import/export system
 - [ ] Develop backend API with user accounts
 - [ ] Implement AI journal analysis and group synchronization
 - [ ] Build analytics dashboard and custom frequency programming
