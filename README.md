@@ -45,4 +45,5 @@ The deeper states (Focus 15, 21, 23+) can produce profound results. Use quality 
 
 See the `goals` file for the full technical brief.
 
-![image](https://github.com/user-attachments/assets/3b1e6a4a-7a4b-434e-bc85-f0ee7ca67da9)
+![image](https://github.com/user-attachments/assets/ab89ef43-9738-4b50-ab92-b490adc8c0ed)
+
