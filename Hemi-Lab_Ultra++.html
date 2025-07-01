@@ -503,6 +503,11 @@
                             <input type="checkbox" id="affirmationMode"> Affirmations
                         </label>
                     </div>
+                    <div class="control-group">
+                        <label>
+                            <input type="checkbox" id="eegFeedback"> EEG Feedback
+                        </label>
+                    </div>
                 </div>
 
                 <div class="session-controls">
@@ -602,6 +607,11 @@
                     'Positive energy surrounds you.'
                 ];
                 this.targetDuration = 15 * 60;
+
+                // EEG feedback
+                this.eegSocket = null;
+                this.eegEnabled = false;
+                this.eegAdjust = {};
                 
                 this.focusPresets = {
                     10: { baseFreq: 100, beatFreq: 7.5, description: "Body asleep, mind awake" },
@@ -699,6 +709,67 @@
                 // Data import/export
                 document.getElementById('exportData').addEventListener('click', () => this.exportData());
                 document.getElementById('importFile').addEventListener('change', (e) => this.importData(e.target.files[0]));
+
+                // EEG feedback toggle
+                document.getElementById('eegFeedback').addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        this.connectEEG();
+                    } else {
+                        this.disconnectEEG();
+                    }
+                });
+            }
+
+            connectEEG() {
+                const url = location.origin && location.origin.startsWith('http')
+                    ? location.origin.replace(/^http/, 'ws')
+                    : 'ws://localhost:3000';
+                this.eegSocket = new WebSocket(url);
+                this.eegSocket.addEventListener('message', (e) => this.handleEEGData(e.data));
+                this.eegSocket.addEventListener('open', () => console.log('EEG socket connected'));
+                this.eegSocket.addEventListener('close', () => console.log('EEG socket closed'));
+                this.eegEnabled = true;
+            }
+
+            disconnectEEG() {
+                if (this.eegSocket) {
+                    this.eegSocket.close();
+                    this.eegSocket = null;
+                }
+                this.eegEnabled = false;
+                this.eegAdjust = {};
+            }
+
+            handleEEGData(raw) {
+                let data;
+                try {
+                    data = JSON.parse(raw);
+                } catch (e) {
+                    return;
+                }
+
+                let alpha = 0, beta = 0, theta = 0, delta = 0, count = 0;
+                Object.values(data).forEach(ch => {
+                    if (!ch) return;
+                    alpha += ch.alpha || 0;
+                    beta += ch.beta || 0;
+                    theta += ch.theta || 0;
+                    delta += ch.delta || 0;
+                    count++;
+                });
+                if (!count) return;
+                alpha /= count; beta /= count; theta /= count; delta /= count;
+
+                const alphaBeta = beta ? alpha / beta : 1;
+                const thetaDelta = delta ? theta / delta : 1;
+
+                this.eegAdjust = {
+                    baseOffset: (alphaBeta - 1) * 2,
+                    beatOffset: (thetaDelta - 1),
+                    volume: Math.max(0, Math.min(1, 0.5 + (alpha - beta) / (alpha + beta + theta + delta + 0.0001)))
+                };
+
+                if (this.isPlaying) this.updateFrequencies();
             }
 
             selectFocusLevel(level) {
@@ -805,9 +876,19 @@
             updateFrequencies() {
                 if (!this.isPlaying) return;
 
-                const baseFreq = parseFloat(document.getElementById('baseFreq').value);
-                const beatFreq = parseFloat(document.getElementById('beatFreq').value);
+                let baseFreq = parseFloat(document.getElementById('baseFreq').value);
+                let beatFreq = parseFloat(document.getElementById('beatFreq').value);
                 const phaseShift = parseFloat(document.getElementById('phaseShift').value);
+
+                if (this.eegEnabled && this.eegAdjust) {
+                    baseFreq += this.eegAdjust.baseOffset || 0;
+                    beatFreq += this.eegAdjust.beatOffset || 0;
+                    if (this.eegAdjust.volume != null && this.gainNode) {
+                        this.gainNode.gain.value = this.eegAdjust.volume;
+                        document.getElementById('volume').value = Math.round(this.eegAdjust.volume * 100);
+                        document.getElementById('volumeValue').textContent = Math.round(this.eegAdjust.volume * 100);
+                    }
+                }
 
                 if (this.leftOscillator && this.rightOscillator) {
                     this.leftOscillator.frequency.value = baseFreq;
