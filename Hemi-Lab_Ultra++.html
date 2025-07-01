@@ -456,6 +456,10 @@
                         <input type="range" class="slider" id="phaseShift" min="0" max="360" value="0">
                     </div>
                     <div class="control-group">
+                        <label>Session Duration (min): <span id="durationValue">15</span></label>
+                        <input type="range" class="slider" id="sessionDuration" min="1" max="60" value="15">
+                    </div>
+                    <div class="control-group">
                         <label>
                             <input type="checkbox" id="isochronicMode"> Isochronic Pulse Layer
                         </label>
@@ -551,6 +555,7 @@
                 this.sessionTimer = null;
                 this.currentFocusLevel = null;
                 this.breathCycle = null;
+                this.targetDuration = 15 * 60;
                 
                 this.focusPresets = {
                     10: { baseFreq: 100, beatFreq: 7.5, description: "Body asleep, mind awake" },
@@ -608,6 +613,10 @@
                     if (this.isPlaying) this.updatePhaseShift();
                 });
 
+                document.getElementById('sessionDuration').addEventListener('input', (e) => {
+                    document.getElementById('durationValue').textContent = e.target.value;
+                    this.targetDuration = parseInt(e.target.value) * 60;
+                });
                 // Session controls
                 document.getElementById('startBtn').addEventListener('click', () => this.startSession());
                 document.getElementById('stopBtn').addEventListener('click', () => this.stopSession());
@@ -651,6 +660,7 @@
                     const beatFreq = parseFloat(document.getElementById('beatFreq').value);
                     const volume = parseFloat(document.getElementById('volume').value) / 100;
                     const phaseShift = parseFloat(document.getElementById('phaseShift').value);
+                    this.targetDuration = parseInt(document.getElementById('sessionDuration').value) * 60;
 
                     const delaySeconds = (phaseShift / 360) / baseFreq;
 
@@ -789,6 +799,9 @@
                     const seconds = elapsed % 60;
                     document.getElementById('sessionTimer').textContent = 
                         `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    if (this.targetDuration && elapsed >= this.targetDuration) {
+                        this.stopSession();
+                    }
                 }, 1000);
             }
 
