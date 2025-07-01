@@ -1,6 +1,6 @@
 # Hemi-Lab Ultra
 
-Hemi-Lab Gateway Terminal is a browser-based tool for exploring altered states of consciousness using audio guidance and interactive feedback. Open `Hemi-Lab_Ultra++.html` in a modern browser to begin.
+Hemi-Lab Ultra is a browser-based tool for exploring altered states of consciousness using audio guidance and interactive feedback. Open `Hemi-Lab_Ultra++.html` in a modern browser to begin.
 
 ## Features
 - **Binaural Beat Engine** – create custom frequency entrainment with optional phase shifting
