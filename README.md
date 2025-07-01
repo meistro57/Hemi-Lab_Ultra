@@ -24,3 +24,6 @@ For best results:
 - Journal your experiences after each session
 
 The deeper states (Focus 15, 21, 23+) may produce profound experiences. Trust the process and document everything.
+
+## Local Development Server
+Run `node server.js` and open [http://localhost:3000](http://localhost:3000) to use the app locally.
