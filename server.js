@@ -17,7 +17,7 @@ const mimeTypes = {
 };
 
 const server = http.createServer((req, res) => {
-  const filePath = req.url === '/' ? '/Hemi-Lab_Ultra++.html' : req.url;
+  const filePath = req.url === '/' ? '/index.html' : req.url;
   const fullPath = path.join(root, filePath);
 
   fs.readFile(fullPath, (err, data) => {

@@ -17,7 +17,7 @@ these audio patterns themselves. The project has no affiliation with the
 Monroe Institute or any government agency.
 
 ## Quick Start
-1. Open `Hemi-Lab_Ultra++.html` directly in a modern browser; or
+1. Open `index.html` directly in a modern browser; or
 2. Install dependencies with `npm install`, run `node server.js` and visit [http://localhost:3000](http://localhost:3000) for a local server.
 
 ## EEG Bridge
