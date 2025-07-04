@@ -46,6 +46,11 @@ It broadcasts real‑time band power metrics over a WebSocket server.
 - **Affirmation Layer** – spoken positive cues during sessions
 - **Data Import/Export** – backup and restore your journal history
 - **Real-Time EEG Feedback** – optional audio adjustments via WebSocket
+- **Session Composer** – layer multiple sound tracks
+- **Advanced Breath Patterns** – choose box, 4-7-8 or Wim Hof styles
+- **Contact Mode Triggers** – probabilistic deep-state events
+- **AI Journal Analysis** – automatic insight summaries
+- **Analytics Dashboard** – visual focus statistics
 
 ## Usage
 1. Select your desired focus level.
