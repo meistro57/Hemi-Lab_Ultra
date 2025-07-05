@@ -38,4 +38,13 @@ describe('BinauralEngine', () => {
     expect(engine.rightOsc.frequency.value).toBeCloseTo(103, 1);
     engine.stop();
   });
+
+  test('setWaveType updates oscillator type', () => {
+    const engine = new BinauralEngine();
+    engine.start(100, 4, 0.5, 'square');
+    expect(engine.leftOsc.type).toBe('square');
+    engine.setWaveType('sawtooth');
+    expect(engine.rightOsc.type).toBe('sawtooth');
+    engine.stop();
+  });
 });

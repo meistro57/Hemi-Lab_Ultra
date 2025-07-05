@@ -1,18 +1,26 @@
 class BinauralEngine {
   constructor(context, gainNode) {
-    this.context = context || new (typeof AudioContext !== 'undefined' ? AudioContext : require('web-audio-mock-api').AudioContext)();
+    this.context =
+      context ||
+      new (typeof AudioContext !== "undefined"
+        ? AudioContext
+        : require("web-audio-mock-api").AudioContext)();
     this.leftOsc = null;
     this.rightOsc = null;
     this.gainNode = gainNode || this.context.createGain();
     this.gainNode.connect(this.context.destination);
     this.driftInterval = null;
     this.driftStep = 0;
+    this.waveType = "sine";
   }
 
-  start(baseFreq, beatFreq, volume = 0.5) {
+  start(baseFreq, beatFreq, volume = 0.5, waveType = "sine") {
     this.stop();
     this.leftOsc = this.context.createOscillator();
     this.rightOsc = this.context.createOscillator();
+    this.waveType = waveType;
+    this.leftOsc.type = waveType;
+    this.rightOsc.type = waveType;
     const merger = this.context.createChannelMerger(2);
     this.leftOsc.frequency.value = baseFreq;
     this.rightOsc.frequency.value = baseFreq + beatFreq;
@@ -50,6 +58,12 @@ class BinauralEngine {
       this.gainNode.gain.setTargetAtTime(vol, now, 0.05);
     }
     this.gainNode.gain.value = vol;
+  }
+
+  setWaveType(type) {
+    this.waveType = type;
+    if (this.leftOsc) this.leftOsc.type = type;
+    if (this.rightOsc) this.rightOsc.type = type;
   }
 
   startDrift(period = 60, min = 3, max = 7) {

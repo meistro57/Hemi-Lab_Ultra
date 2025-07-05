@@ -661,6 +661,17 @@
               />
             </div>
             <div class="control-group">
+              <label>
+                Waveform:
+                <select id="waveType">
+                  <option value="sine">Sine</option>
+                  <option value="square">Square</option>
+                  <option value="sawtooth">Sawtooth</option>
+                  <option value="triangle">Triangle</option>
+                </select>
+              </label>
+            </div>
+            <div class="control-group">
               <label>Volume: <span id="volumeValue">50</span>%</label>
               <input
                 type="range"
@@ -999,6 +1010,17 @@
             if (this.isPlaying) this.updateFrequencies();
           });
 
+          document
+            .getElementById("waveType")
+            .addEventListener("change", (e) => {
+              if (this.engine) {
+                this.engine.setWaveType(e.target.value);
+              }
+              if (this.isPlaying) {
+                this.updateWaveType(e.target.value);
+              }
+            });
+
           document.getElementById("volume").addEventListener("input", (e) => {
             document.getElementById("volumeValue").textContent = e.target.value;
             if (this.gainNode) {
@@ -1234,6 +1256,7 @@
             const beatFreq = parseFloat(
               document.getElementById("beatFreq").value,
             );
+            const waveType = document.getElementById("waveType").value;
             const volume =
               parseFloat(document.getElementById("volume").value) / 100;
             const phaseShift = parseFloat(
@@ -1247,6 +1270,8 @@
             // Create binaural beat
             this.leftOscillator = this.audioContext.createOscillator();
             this.rightOscillator = this.audioContext.createOscillator();
+            this.leftOscillator.type = waveType;
+            this.rightOscillator.type = waveType;
 
             this.phaseDelayNode = this.audioContext.createDelay(0.1);
             this.phaseDelayNode.delayTime.value = delaySeconds;
@@ -1273,6 +1298,7 @@
 
             this.engine.leftOsc = this.leftOscillator;
             this.engine.rightOsc = this.rightOscillator;
+            this.engine.setWaveType(waveType);
             this.engine.gainNode = this.gainNode;
             if (document.getElementById("driftMode").checked) {
               this.engine.startDrift();
@@ -1290,7 +1316,7 @@
                 this.audioContext.createGain(),
               );
               eng.gainNode.connect(this.gainNode);
-              eng.start(b, beat, vol);
+              eng.start(b, beat, vol, waveType);
               this.extraEngines.push(eng);
             });
 
@@ -1421,6 +1447,12 @@
             document.getElementById("phaseShift").value,
           );
           this.phaseDelayNode.delayTime.value = phaseShift / 360 / baseFreq;
+        }
+
+        updateWaveType(type) {
+          if (this.leftOscillator) this.leftOscillator.type = type;
+          if (this.rightOscillator) this.rightOscillator.type = type;
+          this.extraEngines.forEach((e) => e.setWaveType(type));
         }
 
         stopSession() {

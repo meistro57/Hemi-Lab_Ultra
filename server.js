@@ -48,6 +48,22 @@ const server = http.createServer((req, res) => {
 // forwarded to any connected browsers.
 const wss = new WebSocket.Server({ server });
 
+function start(portOverride = port, pingInterval = 30000) {
+  const srv = server.listen(portOverride, () => {
+    console.log(`Hemi-Lab server running at http://localhost:${portOverride}`);
+  });
+  const interval = setInterval(() => {
+    const msg = JSON.stringify({ type: "ping", time: Date.now() });
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(msg);
+      }
+    });
+  }, pingInterval);
+  srv.on("close", () => clearInterval(interval));
+  return srv;
+}
+
 function broadcast(sender, data) {
   wss.clients.forEach((client) => {
     if (client !== sender && client.readyState === WebSocket.OPEN) {
@@ -62,6 +78,8 @@ wss.on("connection", (ws) => {
   });
 });
 
-server.listen(port, () => {
-  console.log(`Hemi-Lab server running at http://localhost:${port}`);
-});
+if (require.main === module) {
+  start();
+}
+
+module.exports = { start, server, wss };

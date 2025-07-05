@@ -7,8 +7,12 @@ from pathlib import Path
 import pytest
 import websockets
 
-sys.path.append(str(Path(__file__).resolve().parents[1] / "python"))
-import eeg_bridge
+try:
+    import scipy  # noqa: F401
+    sys.path.append(str(Path(__file__).resolve().parents[1] / "python"))
+    import eeg_bridge
+except Exception:  # pragma: no cover - skip if dependencies missing
+    pytest.skip("eeg bridge dependencies missing", allow_module_level=True)
 
 
 class DummyWebSocket:
@@ -34,7 +38,7 @@ def bridge() -> eeg_bridge.EEGBridge:
 async def test_broadcast_sends_json_to_clients(bridge: eeg_bridge.EEGBridge) -> None:
     ws1, ws2 = DummyWebSocket(), DummyWebSocket()
     bridge.clients = {ws1, ws2}
-    metrics = {"ch1": {"alpha": 1.0}}
+    metrics = {"channels": {"ch1": {"alpha": 1.0}}, "average": {"alpha": 1.0}}
 
     await bridge.broadcast(metrics)
 
@@ -57,3 +61,13 @@ async def test_websocket_broadcast_loop(bridge: eeg_bridge.EEGBridge) -> None:
 
     server.close()
     await server.wait_closed()
+
+
+def test_compute_bandpower_returns_average(bridge: eeg_bridge.EEGBridge) -> None:
+    import numpy as np
+
+    samples = np.random.rand(250, 2).astype(np.float32)
+    metrics = bridge.compute_bandpower(samples)
+
+    assert "average" in metrics
+    assert set(metrics["average"].keys()) == set(eeg_bridge.BANDS.keys())
