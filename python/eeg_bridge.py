@@ -71,7 +71,9 @@ class EEGBridge:
                 idx = np.logical_and(f >= lo, f <= hi)
                 channel_power[name] = float(np.trapz(psd[idx], f[idx]))
             bp[f"ch{ch+1}"] = channel_power
-        return bp
+
+        avg = {name: float(np.mean([ch[name] for ch in bp.values()])) for name in BANDS}
+        return {"channels": bp, "average": avg}
 
     async def broadcast(self, metrics):
         if not self.clients:
