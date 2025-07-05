@@ -7,6 +7,9 @@ class BinauralEngine {
     this.gainNode.connect(this.context.destination);
     this.driftInterval = null;
     this.driftStep = 0;
+
+    this.bassOsc = null;
+    this.bassGain = null;
   }
 
   start(baseFreq, beatFreq, volume = 0.5) {
@@ -22,6 +25,47 @@ class BinauralEngine {
     this.setVolume(volume);
     if (this.leftOsc.start) this.leftOsc.start();
     if (this.rightOsc.start) this.rightOsc.start();
+  }
+
+  startBass(freq = 60, volume = 0.3) {
+    this.stopBass();
+    this.bassOsc = this.context.createOscillator();
+    this.bassGain = this.context.createGain();
+    this.bassOsc.frequency.value = freq;
+    this.bassOsc.connect(this.bassGain);
+    this.bassGain.connect(this.gainNode);
+    this.setBassVolume(volume);
+    if (this.bassOsc.start) this.bassOsc.start();
+  }
+
+  updateBass(freq) {
+    if (!this.bassOsc) return;
+    const now = this.context.currentTime;
+    if (this.bassOsc.frequency.setTargetAtTime) {
+      this.bassOsc.frequency.setTargetAtTime(freq, now, 0.05);
+    }
+    this.bassOsc.frequency.value = freq;
+  }
+
+  setBassVolume(vol) {
+    if (!this.bassGain) return;
+    const now = this.context.currentTime;
+    if (this.bassGain.gain.setTargetAtTime) {
+      this.bassGain.gain.setTargetAtTime(vol, now, 0.05);
+    }
+    this.bassGain.gain.value = vol;
+  }
+
+  stopBass() {
+    if (this.bassOsc) {
+      if (this.bassOsc.stop) this.bassOsc.stop();
+      this.bassOsc.disconnect();
+      this.bassOsc = null;
+    }
+    if (this.bassGain) {
+      this.bassGain.disconnect();
+      this.bassGain = null;
+    }
   }
 
   update(baseFreq, beatFreq) {
@@ -76,6 +120,7 @@ class BinauralEngine {
 
   stop() {
     this.stopDrift();
+    this.stopBass();
     if (this.leftOsc) {
       if (this.leftOsc.stop) this.leftOsc.stop();
       this.leftOsc.disconnect();

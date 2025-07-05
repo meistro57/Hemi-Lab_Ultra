@@ -762,6 +762,37 @@
             </div>
             <div class="control-group">
               <label>
+                <input type="checkbox" id="deepBassMode" /> Deep Bass
+              </label>
+            </div>
+            <div class="control-group bass-settings" style="display: none">
+              <label>
+                Bass Frequency (Hz): <span id="bassFreqValue">60</span>
+              </label>
+              <input
+                type="range"
+                class="slider"
+                id="bassFreq"
+                min="20"
+                max="150"
+                value="60"
+              />
+            </div>
+            <div class="control-group bass-settings" style="display: none">
+              <label>
+                Bass Volume: <span id="bassVolValue">30</span>%
+              </label>
+              <input
+                type="range"
+                class="slider"
+                id="bassVol"
+                min="0"
+                max="100"
+                value="30"
+              />
+            </div>
+            <div class="control-group">
+              <label>
                 <input type="checkbox" id="affirmationMode" /> Affirmations
               </label>
             </div>
@@ -1074,6 +1105,40 @@
             });
 
           document
+            .getElementById("deepBassMode")
+            .addEventListener("change", (e) => {
+              document.querySelectorAll(".bass-settings").forEach((el) => {
+                el.style.display = e.target.checked ? "block" : "none";
+              });
+              if (this.isPlaying) {
+                if (e.target.checked) {
+                  const freq = parseFloat(
+                    document.getElementById("bassFreq").value,
+                  );
+                  const vol =
+                    parseFloat(document.getElementById("bassVol").value) / 100;
+                  this.engine.startBass(freq, vol);
+                } else {
+                  this.engine.stopBass();
+                }
+              }
+            });
+
+          document.getElementById("bassFreq").addEventListener("input", (e) => {
+            document.getElementById("bassFreqValue").textContent = e.target.value;
+            if (this.isPlaying && this.engine && this.engine.bassOsc) {
+              this.engine.updateBass(parseFloat(e.target.value));
+            }
+          });
+
+          document.getElementById("bassVol").addEventListener("input", (e) => {
+            document.getElementById("bassVolValue").textContent = e.target.value;
+            if (this.isPlaying && this.engine && this.engine.bassOsc) {
+              this.engine.setBassVolume(parseFloat(e.target.value) / 100);
+            }
+          });
+
+          document
             .getElementById("addTrack")
             .addEventListener("click", () => this.addTrack());
           this.addTrack();
@@ -1323,6 +1388,15 @@
               this.engine.startDrift();
             }
 
+            if (document.getElementById("deepBassMode").checked) {
+              const bassFreq = parseFloat(
+                document.getElementById("bassFreq").value,
+              );
+              const bassVol =
+                parseFloat(document.getElementById("bassVol").value) / 100;
+              this.engine.startBass(bassFreq, bassVol);
+            }
+
             // Start composed layers
             this.extraEngines.forEach((e) => e.stop());
             this.extraEngines = [];
@@ -1392,6 +1466,9 @@
 
           let baseFreq = parseFloat(document.getElementById("baseFreq").value);
           let beatFreq = parseFloat(document.getElementById("beatFreq").value);
+          const bassFreq = parseFloat(
+            document.getElementById("bassFreq").value,
+          );
           const phaseShift = parseFloat(
             document.getElementById("phaseShift").value,
           );
@@ -1454,6 +1531,10 @@
               this.phaseDelayNode.delayTime.value = delay;
             }
           }
+
+          if (this.engine && this.engine.bassOsc) {
+            this.engine.updateBass(bassFreq);
+          }
         }
 
         updatePhaseShift() {
@@ -1471,6 +1552,7 @@
         stopSession() {
           if (this.engine) {
             this.engine.stopDrift();
+            this.engine.stopBass();
           }
           if (this.leftOscillator) {
             this.leftOscillator.stop();
