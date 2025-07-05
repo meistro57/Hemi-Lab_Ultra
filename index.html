@@ -1351,11 +1351,20 @@
             document.getElementById("phaseShift").value,
           );
 
-          if (this.eegEnabled && this.eegAdjust) {
+         if (this.eegEnabled && this.eegAdjust) {
             baseFreq += this.eegAdjust.baseOffset || 0;
             beatFreq += this.eegAdjust.beatOffset || 0;
             if (this.eegAdjust.volume != null && this.gainNode) {
-              this.gainNode.gain.value = this.eegAdjust.volume;
+              const now = this.audioContext.currentTime;
+              if (this.gainNode.gain.setTargetAtTime) {
+                this.gainNode.gain.setTargetAtTime(
+                  this.eegAdjust.volume,
+                  now,
+                  0.05,
+                );
+              } else {
+                this.gainNode.gain.value = this.eegAdjust.volume;
+              }
               document.getElementById("volume").value = Math.round(
                 this.eegAdjust.volume * 100,
               );
@@ -1365,17 +1374,40 @@
             }
           }
 
+          const now = this.audioContext.currentTime;
           if (this.leftOscillator && this.rightOscillator) {
-            this.leftOscillator.frequency.value = baseFreq;
-            this.rightOscillator.frequency.value = baseFreq + beatFreq;
+            if (this.leftOscillator.frequency.setTargetAtTime) {
+              this.leftOscillator.frequency.setTargetAtTime(baseFreq, now, 0.05);
+            } else {
+              this.leftOscillator.frequency.value = baseFreq;
+            }
+            const target = baseFreq + beatFreq;
+            if (this.rightOscillator.frequency.setTargetAtTime) {
+              this.rightOscillator.frequency.setTargetAtTime(target, now, 0.05);
+            } else {
+              this.rightOscillator.frequency.value = target;
+            }
           }
 
           if (this.isochronicOscillator) {
-            this.isochronicOscillator.frequency.value = beatFreq;
+            if (this.isochronicOscillator.frequency.setTargetAtTime) {
+              this.isochronicOscillator.frequency.setTargetAtTime(
+                beatFreq,
+                now,
+                0.05,
+              );
+            } else {
+              this.isochronicOscillator.frequency.value = beatFreq;
+            }
           }
 
           if (this.phaseDelayNode) {
-            this.phaseDelayNode.delayTime.value = phaseShift / 360 / baseFreq;
+            const delay = phaseShift / 360 / baseFreq;
+            if (this.phaseDelayNode.delayTime.setTargetAtTime) {
+              this.phaseDelayNode.delayTime.setTargetAtTime(delay, now, 0.05);
+            } else {
+              this.phaseDelayNode.delayTime.value = delay;
+            }
           }
         }
 
