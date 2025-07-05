@@ -25,18 +25,30 @@ class BinauralEngine {
   }
 
   update(baseFreq, beatFreq) {
+    const now = this.context.currentTime;
     if (baseFreq !== undefined && this.leftOsc) {
+      if (this.leftOsc.frequency.setTargetAtTime) {
+        this.leftOsc.frequency.setTargetAtTime(baseFreq, now, 0.05);
+      }
       this.leftOsc.frequency.value = baseFreq;
     }
     if (this.rightOsc) {
       const base = baseFreq !== undefined ? baseFreq : this.leftOsc.frequency.value;
       if (beatFreq !== undefined) {
-        this.rightOsc.frequency.value = base + beatFreq;
+        const freq = base + beatFreq;
+        if (this.rightOsc.frequency.setTargetAtTime) {
+          this.rightOsc.frequency.setTargetAtTime(freq, now, 0.05);
+        }
+        this.rightOsc.frequency.value = freq;
       }
     }
   }
 
   setVolume(vol) {
+    const now = this.context.currentTime;
+    if (this.gainNode.gain.setTargetAtTime) {
+      this.gainNode.gain.setTargetAtTime(vol, now, 0.05);
+    }
     this.gainNode.gain.value = vol;
   }
 
