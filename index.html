@@ -195,6 +195,19 @@
         box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
       }
 
+      .mode528 #mode528Slider {
+        display: none;
+      }
+      .mode528:hover #mode528Slider {
+        display: block;
+      }
+
+      .composer-desc {
+        font-size: 0.9rem;
+        opacity: 0.8;
+        margin-bottom: 10px;
+      }
+
       .session-controls {
         display: flex;
         gap: 15px;
@@ -637,14 +650,14 @@
               <label
                 >Base Frequency (Hz): <span id="baseFreqValue">100</span></label
               >
-              <input
-                type="range"
-                class="slider"
-                id="baseFreq"
-                min="40"
-                max="200"
-                value="100"
-              />
+                <input
+                  type="range"
+                  class="slider"
+                  id="baseFreq"
+                  min="40"
+                  max="1000"
+                  value="100"
+                />
             </div>
             <div class="control-group">
               <label
@@ -689,20 +702,33 @@
                 >Session Duration (min):
                 <span id="durationValue">15</span></label
               >
-              <input
-                type="range"
-                class="slider"
-                id="sessionDuration"
-                min="1"
-                max="60"
-                value="15"
-              />
-            </div>
-            <div class="control-group">
-              <label>
-                <input type="checkbox" id="isochronicMode" /> Isochronic Pulse
-                Layer
-              </label>
+                <input
+                  type="range"
+                  class="slider"
+                  id="sessionDuration"
+                  min="1"
+                  max="60"
+                  value="15"
+                />
+              </div>
+              <div class="control-group mode528">
+                <label>
+                  <input type="checkbox" id="mode528" /> 528 Mode
+                </label>
+                <input
+                  type="range"
+                  class="slider"
+                  id="mode528Slider"
+                  min="520"
+                  max="536"
+                  value="528"
+                />
+              </div>
+              <div class="control-group">
+                <label>
+                  <input type="checkbox" id="isochronicMode" /> Isochronic Pulse
+                  Layer
+                </label>
             </div>
             <div class="control-group">
               <label>
@@ -745,13 +771,16 @@
               </label>
             </div>
           </div>
-          <div class="composer-section">
-            <h3>🎶 Session Composer</h3>
-            <div id="composerTracks"></div>
-            <button class="btn btn-secondary" id="addTrack">
-              ➕ Add Layer
-            </button>
-          </div>
+            <div class="composer-section">
+              <h3>🎶 Session Composer</h3>
+              <p class="composer-desc">
+                Layer additional frequencies to craft complex binaural mixes.
+              </p>
+              <div id="composerTracks"></div>
+              <button class="btn btn-secondary" id="addTrack">
+                ➕ Add Layer
+              </button>
+            </div>
 
           <div class="session-controls">
             <button class="btn btn-primary" id="startBtn">
@@ -1064,17 +1093,33 @@
               this.animateREBAL();
             });
 
-          document
-            .getElementById("driftMode")
-            .addEventListener("change", (e) => {
-              if (this.engine) {
-                if (e.target.checked) {
-                  this.engine.startDrift();
-                } else {
-                  this.engine.stopDrift();
+            document
+              .getElementById("driftMode")
+              .addEventListener("change", (e) => {
+                if (this.engine) {
+                  if (e.target.checked) {
+                    this.engine.startDrift();
+                  } else {
+                    this.engine.stopDrift();
+                  }
                 }
-              }
-            });
+              });
+
+          const mode528 = document.getElementById("mode528");
+          const mode528Slider = document.getElementById("mode528Slider");
+          mode528.addEventListener("change", (e) => {
+            if (e.target.checked) {
+              document.getElementById("baseFreq").value = mode528Slider.value;
+              document.getElementById("baseFreqValue").textContent =
+                mode528Slider.value;
+              if (this.isPlaying) this.updateFrequencies();
+            }
+          });
+          mode528Slider.addEventListener("input", (e) => {
+            document.getElementById("baseFreq").value = e.target.value;
+            document.getElementById("baseFreqValue").textContent = e.target.value;
+            if (mode528.checked && this.isPlaying) this.updateFrequencies();
+          });
 
           // Journal saving
           document
@@ -1730,7 +1775,7 @@
           const div = document.createElement("div");
           div.className = "track";
           div.innerHTML = `
-                    <input type="number" class="track-base" placeholder="Base" value="150">
+                    <input type="number" class="track-base" placeholder="Base" value="150" min="40" max="1000">
                     <input type="number" class="track-beat" placeholder="Beat" value="4">
                     <input type="number" class="track-vol" placeholder="Vol" value="30">
                 `;
