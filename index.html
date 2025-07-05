@@ -740,7 +740,12 @@
                   <input type="checkbox" id="isochronicMode" /> Isochronic Pulse
                   Layer
                 </label>
-            </div>
+              </div>
+              <div class="control-group">
+                <label>
+                  <input type="checkbox" id="deepBassMode" /> Deep Bass Beats
+                </label>
+              </div>
             <div class="control-group">
               <label>
                 <input type="checkbox" id="driftMode" /> Drift Mode
@@ -942,6 +947,7 @@
           this.leftOscillator = null;
           this.rightOscillator = null;
           this.isochronicOscillator = null;
+          this.deepBassOscillator = null;
           this.phaseDelayNode = null;
           this.gainNode = null;
           this.isPlaying = false;
@@ -1126,6 +1132,20 @@
                   }
                 }
               });
+
+          document
+            .getElementById("deepBassMode")
+            .addEventListener("change", (e) => {
+              if (this.isPlaying) {
+                if (e.target.checked) {
+                  this.startDeepBass(
+                    parseFloat(document.getElementById("volume").value) / 100,
+                  );
+                } else {
+                  this.stopDeepBass();
+                }
+              }
+            });
 
           const mode528 = document.getElementById("mode528");
           const mode528Slider = document.getElementById("mode528Slider");
@@ -1370,6 +1390,11 @@
               this.startIsochronicPulse(beatFreq, volume);
             }
 
+            // Deep bass layer if enabled
+            if (document.getElementById("deepBassMode").checked) {
+              this.startDeepBass(volume);
+            }
+
             this.isPlaying = true;
             this.sessionStartTime = Date.now();
             this.updateSessionStatus("Active");
@@ -1411,6 +1436,25 @@
           isoGain.gain.value = volume * 0.2;
 
           this.isochronicOscillator.start();
+        }
+
+        startDeepBass(volume) {
+          this.deepBassOscillator = this.audioContext.createOscillator();
+          const bassGain = this.audioContext.createGain();
+          this.deepBassOscillator.type = "sine";
+          this.deepBassOscillator.frequency.value = 60;
+          this.deepBassOscillator.connect(bassGain);
+          bassGain.connect(this.gainNode);
+          bassGain.gain.value = volume * 0.3;
+          this.deepBassOscillator.start();
+        }
+
+        stopDeepBass() {
+          if (this.deepBassOscillator) {
+            this.deepBassOscillator.stop();
+            this.deepBassOscillator.disconnect();
+            this.deepBassOscillator = null;
+          }
         }
 
         updateFrequencies() {
@@ -1520,6 +1564,8 @@
             this.isochronicOscillator.stop();
             this.isochronicOscillator = null;
           }
+
+          this.stopDeepBass();
 
           this.extraEngines.forEach((e) => e.stop());
           this.extraEngines = [];
