@@ -38,4 +38,22 @@ describe('BinauralEngine', () => {
     expect(engine.rightOsc.frequency.value).toBeCloseTo(103, 1);
     engine.stop();
   });
+
+  test('startBass initializes bass oscillator', () => {
+    const engine = new BinauralEngine();
+    engine.startBass(60, 0.3);
+    expect(engine.bassOsc.frequency.value).toBe(60);
+    expect(engine.bassGain.gain.value).toBeCloseTo(0.3);
+    engine.stopBass();
+  });
+
+  test('updateBass and setBassVolume modify bass params', () => {
+    const engine = new BinauralEngine();
+    engine.startBass(60, 0.3);
+    engine.updateBass(80);
+    engine.setBassVolume(0.5);
+    expect(engine.bassOsc.frequency.value).toBe(80);
+    expect(engine.bassGain.gain.value).toBeCloseTo(0.5);
+    engine.stopBass();
+  });
 });
