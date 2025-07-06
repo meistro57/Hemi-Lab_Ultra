@@ -354,6 +354,24 @@
         transition: width linear;
       }
 
+      .equalizer-container {
+        position: absolute;
+        bottom: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 40px;
+        pointer-events: none;
+      }
+
+      canvas.equalizer {
+        width: 300px;
+        height: 100px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(0, 255, 136, 0.3);
+        border-radius: 8px;
+      }
+
       .session-info {
         margin-bottom: 25px;
         padding: 15px;
@@ -602,13 +620,17 @@
           </div>
           <div class="breath-coach" id="breathCoach">
             <div class="breath-text" id="breathText">Breathe In</div>
-            <div class="breath-bar">
-              <div class="breath-progress" id="breathProgress"></div>
-            </div>
+          <div class="breath-bar">
+            <div class="breath-progress" id="breathProgress"></div>
           </div>
         </div>
+        <div class="equalizer-container">
+          <canvas id="leftEQ" class="equalizer" width="300" height="100"></canvas>
+          <canvas id="rightEQ" class="equalizer" width="300" height="100"></canvas>
+        </div>
+      </div>
 
-        <div class="control-panel">
+      <div class="control-panel">
           <div class="focus-selector">
             <h3>🌌 Focus Level Navigator</h3>
             <div class="focus-levels">
@@ -949,6 +971,9 @@
           this.isochronicOscillator = null;
           this.deepBassOscillator = null;
           this.phaseDelayNode = null;
+          this.leftAnalyser = null;
+          this.rightAnalyser = null;
+          this.eqAnimation = null;
           this.gainNode = null;
           this.isPlaying = false;
           this.sessionStartTime = null;
@@ -1000,6 +1025,7 @@
             this.gainNode = this.audioContext.createGain();
             this.gainNode.connect(this.audioContext.destination);
             this.engine = new BinauralEngine(this.audioContext, this.gainNode);
+            this.initEqualizer();
           }
 
           if (this.audioContext.state === "suspended") {
@@ -1345,14 +1371,20 @@
             const rightGain = this.audioContext.createGain();
             const merger = this.audioContext.createChannelMerger(2);
 
+            if (!this.leftAnalyser || !this.rightAnalyser) {
+              this.initEqualizer();
+            }
+
             this.leftOscillator.frequency.value = baseFreq;
             this.rightOscillator.frequency.value = baseFreq + beatFreq;
 
             this.leftOscillator.connect(leftGain);
             this.rightOscillator.connect(this.phaseDelayNode);
             this.phaseDelayNode.connect(rightGain);
-            leftGain.connect(merger, 0, 0);
-            rightGain.connect(merger, 0, 1);
+            leftGain.connect(this.leftAnalyser);
+            rightGain.connect(this.rightAnalyser);
+            this.leftAnalyser.connect(merger, 0, 0);
+            this.rightAnalyser.connect(merger, 0, 1);
             merger.connect(this.gainNode);
 
             leftGain.gain.value = volume * 0.5;
@@ -1360,6 +1392,8 @@
 
             this.leftOscillator.start();
             this.rightOscillator.start();
+
+            this.drawEqualizer();
 
             this.engine.leftOsc = this.leftOscillator;
             this.engine.rightOsc = this.rightOscillator;
@@ -1566,6 +1600,11 @@
           }
 
           this.stopDeepBass();
+          this.stopEqualizer();
+          const l = document.getElementById("leftEQ");
+          const r = document.getElementById("rightEQ");
+          if (l) l.getContext("2d").clearRect(0, 0, l.width, l.height);
+          if (r) r.getContext("2d").clearRect(0, 0, r.width, r.height);
 
           this.extraEngines.forEach((e) => e.stop());
           this.extraEngines = [];
@@ -1653,6 +1692,47 @@
 
         stopBreathCoach() {
           document.getElementById("breathCoach").classList.remove("active");
+        }
+
+        initEqualizer() {
+          this.leftAnalyser = this.audioContext.createAnalyser();
+          this.rightAnalyser = this.audioContext.createAnalyser();
+          this.leftAnalyser.fftSize = 64;
+          this.rightAnalyser.fftSize = 64;
+        }
+
+        drawEqualizer() {
+          if (!this.leftAnalyser || !this.rightAnalyser) return;
+          const leftCanvas = document.getElementById("leftEQ");
+          const rightCanvas = document.getElementById("rightEQ");
+          if (!leftCanvas || !rightCanvas) return;
+          const lctx = leftCanvas.getContext("2d");
+          const rctx = rightCanvas.getContext("2d");
+          const len = this.leftAnalyser.frequencyBinCount;
+          const ldata = new Uint8Array(len);
+          const rdata = new Uint8Array(len);
+          this.leftAnalyser.getByteFrequencyData(ldata);
+          this.rightAnalyser.getByteFrequencyData(rdata);
+          lctx.clearRect(0, 0, leftCanvas.width, leftCanvas.height);
+          rctx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
+          const lw = leftCanvas.width / len;
+          const rw = rightCanvas.width / len;
+          for (let i = 0; i < len; i++) {
+            const lh = (ldata[i] / 255) * leftCanvas.height;
+            const rh = (rdata[i] / 255) * rightCanvas.height;
+            lctx.fillStyle = "#00ff88";
+            lctx.fillRect(i * lw, leftCanvas.height - lh, lw - 1, lh);
+            rctx.fillStyle = "#0099ff";
+            rctx.fillRect(i * rw, rightCanvas.height - rh, rw - 1, rh);
+          }
+          this.eqAnimation = requestAnimationFrame(() => this.drawEqualizer());
+        }
+
+        stopEqualizer() {
+          if (this.eqAnimation) {
+            cancelAnimationFrame(this.eqAnimation);
+            this.eqAnimation = null;
+          }
         }
 
         speakAffirmation() {
