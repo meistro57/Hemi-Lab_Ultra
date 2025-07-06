@@ -1084,8 +1084,13 @@
 
           document.getElementById("volume").addEventListener("input", (e) => {
             document.getElementById("volumeValue").textContent = e.target.value;
-            if (this.gainNode) {
-              this.gainNode.gain.value = e.target.value / 100;
+            if (this.gainNode && this.audioContext) {
+              const now = this.audioContext.currentTime;
+              if (this.gainNode.gain.setTargetAtTime) {
+                this.gainNode.gain.setTargetAtTime(e.target.value / 100, now, 0.05);
+              } else {
+                this.gainNode.gain.value = e.target.value / 100;
+              }
             }
           });
 
@@ -1390,6 +1395,14 @@
             leftGain.gain.value = volume * 0.5;
             rightGain.gain.value = volume * 0.5;
 
+            const now = this.audioContext.currentTime;
+            this.gainNode.gain.setValueAtTime(0, now);
+            if (this.gainNode.gain.linearRampToValueAtTime) {
+              this.gainNode.gain.linearRampToValueAtTime(volume, now + 0.1);
+            } else {
+              this.gainNode.gain.value = volume;
+            }
+
             this.leftOscillator.start();
             this.rightOscillator.start();
 
@@ -1579,50 +1592,65 @@
         }
 
         stopSession() {
-          if (this.engine) {
-            this.engine.stopDrift();
-          }
-          if (this.leftOscillator) {
-            this.leftOscillator.stop();
-            this.leftOscillator = null;
-          }
-          if (this.rightOscillator) {
-            this.rightOscillator.stop();
-            this.rightOscillator = null;
-          }
-          if (this.phaseDelayNode) {
-            this.phaseDelayNode.disconnect();
-            this.phaseDelayNode = null;
-          }
-          if (this.isochronicOscillator) {
-            this.isochronicOscillator.stop();
-            this.isochronicOscillator = null;
+          const finalizeStop = () => {
+            if (this.engine) {
+              this.engine.stopDrift();
+            }
+            if (this.leftOscillator) {
+              this.leftOscillator.stop();
+              this.leftOscillator = null;
+            }
+            if (this.rightOscillator) {
+              this.rightOscillator.stop();
+              this.rightOscillator = null;
+            }
+            if (this.phaseDelayNode) {
+              this.phaseDelayNode.disconnect();
+              this.phaseDelayNode = null;
+            }
+            if (this.isochronicOscillator) {
+              this.isochronicOscillator.stop();
+              this.isochronicOscillator = null;
+            }
+
+            this.stopDeepBass();
+            this.stopEqualizer();
+            const l = document.getElementById("leftEQ");
+            const r = document.getElementById("rightEQ");
+            if (l) l.getContext("2d").clearRect(0, 0, l.width, l.height);
+            if (r) r.getContext("2d").clearRect(0, 0, r.width, r.height);
+
+            this.extraEngines.forEach((e) => e.stop());
+            this.extraEngines = [];
+
+            this.isPlaying = false;
+            this.animateREBAL();
+            this.updateSessionStatus("Complete");
+            this.stopSessionTimer();
+            this.stopBreathCoach();
+
+            document.getElementById("startBtn").textContent = "🚀 Begin Session";
+            document.getElementById("startBtn").disabled = false;
+
+            // Auto-populate journal
+            if (this.currentFocusLevel) {
+              document.getElementById("journalFocus").value =
+                this.currentFocusLevel;
+            }
+          };
+
+          if (this.gainNode && this.audioContext) {
+            const now = this.audioContext.currentTime;
+            if (this.gainNode.gain.linearRampToValueAtTime) {
+              this.gainNode.gain.cancelScheduledValues(now);
+              this.gainNode.gain.linearRampToValueAtTime(0, now + 0.1);
+              setTimeout(finalizeStop, 120);
+              return;
+            }
+            this.gainNode.gain.value = 0;
           }
 
-          this.stopDeepBass();
-          this.stopEqualizer();
-          const l = document.getElementById("leftEQ");
-          const r = document.getElementById("rightEQ");
-          if (l) l.getContext("2d").clearRect(0, 0, l.width, l.height);
-          if (r) r.getContext("2d").clearRect(0, 0, r.width, r.height);
-
-          this.extraEngines.forEach((e) => e.stop());
-          this.extraEngines = [];
-
-          this.isPlaying = false;
-          this.animateREBAL();
-          this.updateSessionStatus("Complete");
-          this.stopSessionTimer();
-          this.stopBreathCoach();
-
-          document.getElementById("startBtn").textContent = "🚀 Begin Session";
-          document.getElementById("startBtn").disabled = false;
-
-          // Auto-populate journal
-          if (this.currentFocusLevel) {
-            document.getElementById("journalFocus").value =
-              this.currentFocusLevel;
-          }
+          finalizeStop();
         }
 
         startSessionTimer() {
