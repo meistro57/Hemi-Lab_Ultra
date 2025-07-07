@@ -1152,6 +1152,21 @@
               this.animateREBAL();
             });
 
+          document
+            .getElementById("isochronicMode")
+            .addEventListener("change", (e) => {
+              if (this.isPlaying) {
+                if (e.target.checked) {
+                  this.startIsochronicPulse(
+                    parseFloat(document.getElementById("beatFreq").value),
+                    parseFloat(document.getElementById("volume").value) / 100,
+                  );
+                } else {
+                  this.stopIsochronicPulse();
+                }
+              }
+            });
+
             document
               .getElementById("driftMode")
               .addEventListener("change", (e) => {
@@ -1483,6 +1498,14 @@
           isoGain.gain.value = volume * 0.2;
 
           this.isochronicOscillator.start();
+        }
+
+        stopIsochronicPulse() {
+          if (this.isochronicOscillator) {
+            this.isochronicOscillator.stop();
+            this.isochronicOscillator.disconnect();
+            this.isochronicOscillator = null;
+          }
         }
 
         startDeepBass(volume) {
@@ -1966,6 +1989,46 @@
                     <input type="number" class="track-vol" placeholder="Vol" value="30">
                 `;
           container.appendChild(div);
+
+          const index = container.querySelectorAll(".track").length - 1;
+          const baseInput = div.querySelector(".track-base");
+          const beatInput = div.querySelector(".track-beat");
+          const volInput = div.querySelector(".track-vol");
+
+          const update = () => {
+            const eng = this.extraEngines[index];
+            if (eng) {
+              eng.update(
+                parseFloat(baseInput.value),
+                parseFloat(beatInput.value),
+              );
+            }
+          };
+          const updateVol = () => {
+            const eng = this.extraEngines[index];
+            if (eng) {
+              eng.setVolume(parseFloat(volInput.value) / 100);
+            }
+          };
+
+          baseInput.addEventListener("input", update);
+          beatInput.addEventListener("input", update);
+          volInput.addEventListener("input", updateVol);
+
+          if (this.isPlaying) {
+            const eng = new BinauralEngine(
+              this.audioContext,
+              this.audioContext.createGain(),
+            );
+            eng.gainNode.connect(this.gainNode);
+            eng.start(
+              parseFloat(baseInput.value),
+              parseFloat(beatInput.value),
+              parseFloat(volInput.value) / 100,
+              document.getElementById("waveType").value,
+            );
+            this.extraEngines.push(eng);
+          }
         }
 
         analyzeJournalAI() {
