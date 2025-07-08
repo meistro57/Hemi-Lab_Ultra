@@ -51,6 +51,11 @@ It broadcasts real‑time band power metrics over a WebSocket server.
 - **Contact Mode Triggers** – probabilistic deep-state events
 - **AI Journal Analysis** – automatic insight summaries
 - **Analytics Dashboard** – visual focus statistics
+- **User Accounts & Cloud Sync** – login system and cross-device data
+- **Group Session Rooms** – synchronized multi-user experiences
+- **Wearable Sensor Support** – heart rate and GSR input for biofeedback
+- **VR/AR Visualization Mode** – immersive environment via WebXR
+- **Offline PWA** – installable app with cached sessions
 
 ## Usage
 1. Select your desired focus level.
