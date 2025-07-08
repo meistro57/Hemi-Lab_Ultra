@@ -413,6 +413,17 @@
         font-size: 1.3rem;
       }
 
+      .bookmark-section {
+        margin-top: 20px;
+      }
+
+      .bookmark-slots {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+        gap: 8px;
+        margin-top: 10px;
+      }
+
       .journal-form {
         display: grid;
         gap: 15px;
@@ -861,6 +872,42 @@
             <button class="btn btn-secondary" id="stopBtn">⏹️ Stop</button>
           </div>
 
+          <div class="bookmark-section">
+            <h3>🔖 Bookmarks</h3>
+            <div class="bookmark-slots" id="bookmarkSlots">
+              <button class="btn btn-secondary bookmark-btn" data-slot="1">
+                Slot 1
+              </button>
+              <button class="btn btn-secondary bookmark-btn" data-slot="2">
+                Slot 2
+              </button>
+              <button class="btn btn-secondary bookmark-btn" data-slot="3">
+                Slot 3
+              </button>
+              <button class="btn btn-secondary bookmark-btn" data-slot="4">
+                Slot 4
+              </button>
+              <button class="btn btn-secondary bookmark-btn" data-slot="5">
+                Slot 5
+              </button>
+              <button class="btn btn-secondary bookmark-btn" data-slot="6">
+                Slot 6
+              </button>
+              <button class="btn btn-secondary bookmark-btn" data-slot="7">
+                Slot 7
+              </button>
+              <button class="btn btn-secondary bookmark-btn" data-slot="8">
+                Slot 8
+              </button>
+              <button class="btn btn-secondary bookmark-btn" data-slot="9">
+                Slot 9
+              </button>
+              <button class="btn btn-secondary bookmark-btn" data-slot="10">
+                Slot 10
+              </button>
+            </div>
+          </div>
+
           <div class="session-info" id="sessionInfo">
             <div>
               <span
@@ -1058,6 +1105,7 @@
 
           this.initializeUI();
           this.loadUserData();
+          this.initializeBookmarks();
         }
 
         async initializeAudio() {
@@ -2177,6 +2225,42 @@
         stopFrequencyProgram() {
           this.programTimers.forEach((t) => clearTimeout(t));
           this.programTimers = [];
+        }
+
+        bookmarkSettings(slot) {
+          const settings = {
+            baseFreq: document.getElementById("baseFreq").value,
+            beatFreq: document.getElementById("beatFreq").value,
+            waveType: document.getElementById("waveType").value,
+            volume: document.getElementById("volume").value,
+            phaseShift: document.getElementById("phaseShift").value,
+            sessionDuration: document.getElementById("sessionDuration").value,
+            mode528: document.getElementById("mode528").checked,
+            mode528Freq: document.getElementById("mode528Slider").value,
+            isochronicMode: document.getElementById("isochronicMode").checked,
+            deepBassMode: document.getElementById("deepBassMode").checked,
+            driftMode: document.getElementById("driftMode").checked,
+            entropyMode: document.getElementById("entropyMode").checked,
+            rebalMode: document.getElementById("rebalMode").checked,
+            breathCoachMode: document.getElementById("breathCoachMode").checked,
+            breathPattern: document.getElementById("breathPattern").value,
+            affirmationMode: document.getElementById("affirmationMode").checked,
+            eegFeedback: document.getElementById("eegFeedback").checked,
+          };
+          localStorage.setItem(
+            `hemilab_bookmark_${slot}`,
+            JSON.stringify(settings),
+          );
+          alert(`🔖 Settings saved to Slot ${slot}!`);
+        }
+
+        initializeBookmarks() {
+          document.querySelectorAll(".bookmark-btn").forEach((btn) => {
+            btn.addEventListener("click", () => {
+              const slot = btn.dataset.slot;
+              this.bookmarkSettings(slot);
+            });
+          });
         }
 
         analyzeJournalAI() {
