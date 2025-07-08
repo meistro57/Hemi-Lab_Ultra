@@ -44,6 +44,7 @@ It broadcasts real‑time band power metrics over a WebSocket server.
 - **Session Journal** – record mood and insights
 - **Pattern Analysis** – discover optimal practice trends
 - **Affirmation Layer** – spoken positive cues during sessions
+- **Smooth Frequency Ramps** – crackle-free adjustments when changing tones
 - **Data Import/Export** – backup and restore your journal history
 - **Real-Time EEG Feedback** – optional audio adjustments via WebSocket
 - **Session Composer** – layer multiple sound tracks

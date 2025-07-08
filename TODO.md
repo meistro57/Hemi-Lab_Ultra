@@ -13,3 +13,4 @@
 - [x] Implement AI journal analysis and group synchronization
 - [x] Build analytics dashboard and custom frequency programming
 - [ ] Explore experimental protocols (entropy drift and more)
+- [x] Smooth frequency ramps to remove pops
