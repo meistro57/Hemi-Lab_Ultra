@@ -8,6 +8,10 @@ class BinauralEngine {
     this.leftOsc = null;
     this.rightOsc = null;
     this.gainNode = gainNode || this.context.createGain();
+    this.filter = this.context.createBiquadFilter();
+    this.filter.type = "lowpass";
+    this.filter.frequency.value = 12000;
+    this.filter.connect(this.gainNode);
     this.gainNode.connect(this.context.destination);
     this.driftInterval = null;
     this.driftStep = 0;
@@ -26,10 +30,11 @@ class BinauralEngine {
     this.rightOsc.frequency.value = baseFreq + beatFreq;
     this.leftOsc.connect(merger, 0, 0);
     this.rightOsc.connect(merger, 0, 1);
-    merger.connect(this.gainNode);
-    this.setVolume(volume);
+    merger.connect(this.filter);
+    this.setVolume(0);
     if (this.leftOsc.start) this.leftOsc.start();
     if (this.rightOsc.start) this.rightOsc.start();
+    this.setVolume(volume);
   }
 
   update(baseFreq, beatFreq) {
@@ -90,16 +95,20 @@ class BinauralEngine {
 
   stop() {
     this.stopDrift();
+    const now = this.context.currentTime;
+    this.setVolume(0);
+    const stopAt = now + 0.1;
     if (this.leftOsc) {
-      if (this.leftOsc.stop) this.leftOsc.stop();
+      if (this.leftOsc.stop) this.leftOsc.stop(stopAt);
       this.leftOsc.disconnect();
       this.leftOsc = null;
     }
     if (this.rightOsc) {
-      if (this.rightOsc.stop) this.rightOsc.stop();
+      if (this.rightOsc.stop) this.rightOsc.stop(stopAt);
       this.rightOsc.disconnect();
       this.rightOsc = null;
     }
+    // leave filter connected for next session
   }
 }
 
