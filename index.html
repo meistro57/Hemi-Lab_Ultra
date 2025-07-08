@@ -25,6 +25,20 @@
         min-height: 100vh;
         overflow-x: hidden;
       }
+      body.light-mode {
+        background: radial-gradient(circle at 50% 50%, #ffffff 0%, #dddddd 100%);
+        color: #000000;
+      }
+
+      body.light-mode .control-panel {
+        background: rgba(0, 0, 0, 0.05);
+        border-color: rgba(0, 0, 0, 0.2);
+      }
+
+      body.light-mode .visualization-area {
+        background: radial-gradient(circle at center, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.2) 100%);
+        border-color: rgba(0, 0, 0, 0.3);
+      }
 
       .container {
         max-width: 1200px;
@@ -562,6 +576,10 @@
         text-decoration: underline;
       }
 
+      .theme-switch {
+        margin-top: 10px;
+        display: inline-block;
+      }
       .instructions {
         margin-bottom: 20px;
         text-align: center;
@@ -611,7 +629,9 @@
           target="_blank"
           class="github-link"
           >View on GitHub</a
-        >
+        <label class="theme-switch">
+          <input type="checkbox" id="themeToggle" /> Light Mode
+        </label>
       </header>
 
       <div class="instructions">
@@ -1629,24 +1649,14 @@
         }
 
         startIsochronicPulse(frequency, volume) {
-          this.isochronicOscillator = this.audioContext.createOscillator();
-          const isoGain = this.audioContext.createGain();
-
-          this.isochronicOscillator.type = "square";
-          this.isochronicOscillator.frequency.value = frequency;
-
-          this.isochronicOscillator.connect(isoGain);
-          isoGain.connect(this.gainNode);
-          isoGain.gain.value = volume * 0.2;
-
-          this.isochronicOscillator.start();
+          if (this.engine) {
+            this.engine.startIsochronic(frequency, volume * 0.2);
+          }
         }
 
         stopIsochronicPulse() {
-          if (this.isochronicOscillator) {
-            this.isochronicOscillator.stop();
-            this.isochronicOscillator.disconnect();
-            this.isochronicOscillator = null;
+          if (this.engine) {
+            this.engine.stopIsochronic();
           }
         }
 
@@ -2509,6 +2519,21 @@
       // Create app instance on DOM ready
       document.addEventListener("DOMContentLoaded", () => {
         app = new HemiLabGateway();
+          const themeToggle = document.getElementById("themeToggle");
+          const storedTheme = localStorage.getItem("hemilab_theme") || "dark";
+          if (storedTheme === "light") {
+            document.body.classList.add("light-mode");
+            themeToggle.checked = true;
+          }
+          themeToggle.addEventListener("change", () => {
+            if (themeToggle.checked) {
+              document.body.classList.add("light-mode");
+              localStorage.setItem("hemilab_theme", "light");
+            } else {
+              document.body.classList.remove("light-mode");
+              localStorage.setItem("hemilab_theme", "dark");
+            }
+          });
       
         // Add some initial guidance
         const welcomeMessage = `

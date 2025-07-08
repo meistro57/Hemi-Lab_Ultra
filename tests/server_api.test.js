@@ -60,3 +60,28 @@ test('group broadcast stays within group', (done) => {
     }, 100);
   });
 });
+
+test('create and fetch sessions', async () => {
+  const sessionsFile = path.join(__dirname, 'test_sessions.json');
+  process.env.SESSIONS_FILE = sessionsFile;
+  jest.resetModules();
+  const { start } = require('../server');
+  const srv = start(0, 50);
+  const port = srv.address().port;
+  const base = `http://localhost:${port}`;
+
+  let res = await fetch(base + '/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user: 'bob', focus: 10 }),
+  });
+  expect(res.status).toBe(200);
+
+  res = await fetch(base + '/api/sessions?user=bob');
+  const list = await res.json();
+  expect(list.length).toBe(1);
+  expect(list[0].user).toBe('bob');
+
+  srv.close();
+  fs.unlinkSync(sessionsFile);
+});

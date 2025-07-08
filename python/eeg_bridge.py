@@ -25,7 +25,13 @@ BANDS = {
 class EEGBridge:
     """Read EEG samples from OpenBCI and broadcast band power via WebSocket."""
 
-    def __init__(self, port="/dev/ttyUSB0", host="localhost", ws_port=8765):
+    def __init__(
+        self,
+        port: str = "/dev/ttyUSB0",
+        host: str = "localhost",
+        ws_port: int = 8765,
+        output_file: str | None = None,
+    ) -> None:
         if OpenBCICyton is None:
             raise RuntimeError("pyOpenBCI library is required")
         self.board = OpenBCICyton(port=port)
@@ -34,6 +40,7 @@ class EEGBridge:
         self.clients = set()
         self.loop = asyncio.get_event_loop()
         self.buffer = []
+        self.output_file = output_file
 
     def start(self):
         """Start the board thread and WebSocket server."""
@@ -80,8 +87,29 @@ class EEGBridge:
             return
         message = json.dumps(metrics)
         await asyncio.gather(*[ws.send(message) for ws in self.clients])
+        self.log_metrics(metrics)
+
+    def log_metrics(self, metrics: dict) -> None:
+        if not self.output_file:
+            return
+        with open(self.output_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(metrics) + "\n")
 
 
 if __name__ == "__main__":
-    bridge = EEGBridge()
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--serial-port", default="/dev/ttyUSB0")
+    parser.add_argument("--host", default="localhost")
+    parser.add_argument("--ws-port", type=int, default=8765)
+    parser.add_argument("--output-file")
+    args = parser.parse_args()
+
+    bridge = EEGBridge(
+        port=args.serial_port,
+        host=args.host,
+        ws_port=args.ws_port,
+        output_file=args.output_file,
+    )
     bridge.start()

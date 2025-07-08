@@ -31,6 +31,7 @@ def bridge() -> eeg_bridge.EEGBridge:
     br.ws_port = 0
     br.loop = asyncio.new_event_loop()
     br.buffer = []
+    br.output_file = None
     return br
 
 
@@ -71,3 +72,10 @@ def test_compute_bandpower_returns_average(bridge: eeg_bridge.EEGBridge) -> None
 
     assert "average" in metrics
     assert set(metrics["average"].keys()) == set(eeg_bridge.BANDS.keys())
+
+
+def test_log_metrics_writes_file(tmp_path, bridge: eeg_bridge.EEGBridge) -> None:
+    file = tmp_path / "metrics.jsonl"
+    bridge.output_file = str(file)
+    bridge.log_metrics({"foo": 1})
+    assert json.loads(file.read_text().strip()) == {"foo": 1}

@@ -15,6 +15,8 @@ class BinauralEngine {
     this.gainNode.connect(this.context.destination);
     this.driftInterval = null;
     this.driftStep = 0;
+    this.isochronicOsc = null;
+    this.isoGain = null;
     this.waveType = "sine";
   }
 
@@ -78,6 +80,27 @@ class BinauralEngine {
     this.waveType = type;
     if (this.leftOsc) this.leftOsc.type = type;
     if (this.rightOsc) this.rightOsc.type = type;
+  }
+  startIsochronic(rate = 10, volume = 0.1) {
+    this.stopIsochronic();
+    this.isochronicOsc = this.context.createOscillator();
+    this.isoGain = this.context.createGain();
+    this.isochronicOsc.type = "square";
+    this.isochronicOsc.frequency.value = rate;
+    this.isochronicOsc.connect(this.isoGain);
+    this.isoGain.gain.value = volume;
+    this.isoGain.connect(this.gainNode);
+    if (this.isochronicOsc.start) this.isochronicOsc.start();
+  }
+
+  stopIsochronic() {
+    if (this.isochronicOsc) {
+      if (this.isochronicOsc.stop) this.isochronicOsc.stop();
+      this.isochronicOsc.disconnect();
+      this.isoGain.disconnect();
+      this.isochronicOsc = null;
+      this.isoGain = null;
+    }
   }
 
   startDrift(period = 60, min = 3, max = 7) {

@@ -7,6 +7,8 @@ const WebSocket = require("ws");
 const port = process.env.PORT || 3000;
 const root = path.join(__dirname);
 const USERS_FILE = process.env.USERS_FILE || path.join(__dirname, "users.json");
+const SESSIONS_FILE =
+  process.env.SESSIONS_FILE || path.join(__dirname, "sessions.json");
 
 const mimeTypes = {
   ".html": "text/html",
@@ -24,6 +26,18 @@ function loadUsers() {
   } catch {
     return {};
   }
+}
+
+function loadSessions() {
+  try {
+    return JSON.parse(fs.readFileSync(SESSIONS_FILE, "utf8"));
+  } catch {
+    return [];
+  }
+}
+
+function saveSessions(sessions) {
+  fs.writeFileSync(SESSIONS_FILE, JSON.stringify(sessions, null, 2));
 }
 
 function saveUsers(users) {
@@ -95,6 +109,31 @@ const server = http.createServer((req, res) => {
       res.writeHead(ok ? 200 : 401, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ success: !!ok }));
     });
+    return;
+  }
+
+  if (req.method === "POST" && req.url === "/api/sessions") {
+    let body = "";
+    req.on("data", (c) => (body += c));
+    req.on("end", () => {
+      const session = JSON.parse(body || "{}");
+      const sessions = loadSessions();
+      session.timestamp = Date.now();
+      sessions.push(session);
+      saveSessions(sessions);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: true }));
+    });
+    return;
+  }
+
+  if (req.method === "GET" && req.url.startsWith("/api/sessions")) {
+    const sessions = loadSessions();
+    const urlObj = new URL(req.url, `http://${req.headers.host}`);
+    const user = urlObj.searchParams.get("user");
+    const data = user ? sessions.filter((s) => s.user === user) : sessions;
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(data));
     return;
   }
   const filePath = req.url === "/" ? "/index.html" : req.url;
