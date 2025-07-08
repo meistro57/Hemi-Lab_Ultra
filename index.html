@@ -2405,22 +2405,10 @@
       // Initialize the application
       let app;
 
-      // Wait for user interaction before initializing audio context
-      document.addEventListener(
-        "click",
-        () => {
-          if (!app) {
-            app = new HemiLabGateway();
-          }
-        },
-        { once: true },
-      );
-
-      // Initialize UI immediately
+      // Create app instance on DOM ready
       document.addEventListener("DOMContentLoaded", () => {
-        // Create app instance for UI, audio will initialize on first interaction
         app = new HemiLabGateway();
-
+      
         // Add some initial guidance
         const welcomeMessage = `
 🧠 Welcome to Hemi-Lab Gateway Terminal
@@ -2450,6 +2438,17 @@ Safe travels, consciousness explorer. ✨
 
         console.log(welcomeMessage);
       });
+
+      // Activate audio context on first user interaction
+      document.addEventListener(
+        "click",
+        () => {
+          if (app) {
+            app.initializeAudio();
+          }
+        },
+        { once: true },
+      );
 
       // Add some keyboard shortcuts for advanced users
       document.addEventListener("keydown", (e) => {
