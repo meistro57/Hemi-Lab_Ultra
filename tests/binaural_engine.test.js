@@ -47,4 +47,14 @@ describe('BinauralEngine', () => {
     expect(engine.rightOsc.type).toBe('sawtooth');
     engine.stop();
   });
+
+  test('isochronic oscillator starts and stops', () => {
+    const engine = new BinauralEngine();
+    engine.start(100, 4);
+    engine.startIsochronic(5, 0.2);
+    expect(engine.isochronicOsc.frequency.value).toBe(5);
+    engine.stopIsochronic();
+    expect(engine.isochronicOsc).toBeNull();
+    engine.stop();
+  });
 });
