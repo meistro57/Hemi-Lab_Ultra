@@ -380,6 +380,25 @@
         border-left: 4px solid #00ff88;
       }
 
+      .session-progress {
+        margin-top: 10px;
+      }
+
+      .progress-bar {
+        width: 100%;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+
+      .progress-fill {
+        width: 0%;
+        height: 100%;
+        background: linear-gradient(90deg, #0099ff, #ff0088);
+        transition: width 0.3s linear;
+      }
+
       .journal-section {
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid rgba(255, 0, 136, 0.3);
@@ -841,6 +860,11 @@
             <div>
               <strong>Current Focus:</strong>
               <span id="currentFocus">None Selected</span>
+            </div>
+            <div class="session-progress">
+              <div class="progress-bar">
+                <div class="progress-fill" id="sessionProgress"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -1360,6 +1384,8 @@
         async startSession() {
           try {
             await this.initializeAudio();
+            const progressEl = document.getElementById("sessionProgress");
+            if (progressEl) progressEl.style.width = "0%";
 
             const baseFreq = parseFloat(
               document.getElementById("baseFreq").value,
@@ -1677,6 +1703,8 @@
         }
 
         startSessionTimer() {
+          const progressEl = document.getElementById("sessionProgress");
+          progressEl.style.width = "0%";
           this.sessionTimer = setInterval(() => {
             const elapsed = Math.floor(
               (Date.now() - this.sessionStartTime) / 1000,
@@ -1685,6 +1713,10 @@
             const seconds = elapsed % 60;
             document.getElementById("sessionTimer").textContent =
               `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+            if (this.targetDuration) {
+              const pct = Math.min((elapsed / this.targetDuration) * 100, 100);
+              progressEl.style.width = `${pct}%`;
+            }
             if (this.targetDuration && elapsed >= this.targetDuration) {
               this.stopSession();
             }
@@ -1696,6 +1728,8 @@
             clearInterval(this.sessionTimer);
             this.sessionTimer = null;
           }
+          const progressEl = document.getElementById("sessionProgress");
+          if (progressEl) progressEl.style.width = "0%";
         }
 
         startBreathCoach() {
