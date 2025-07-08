@@ -794,6 +794,11 @@
             </div>
             <div class="control-group">
               <label>
+                <input type="checkbox" id="entropyMode" /> Entropy Drift
+              </label>
+            </div>
+            <div class="control-group">
+              <label>
                 <input type="checkbox" id="rebalMode" checked /> REBAL Energy
                 Shield
               </label>
@@ -827,6 +832,12 @@
                 <input type="checkbox" id="eegFeedback" /> EEG Feedback
               </label>
             </div>
+            <div class="control-group">
+              <label>Group ID
+                <input type="text" id="groupId" placeholder="optional" />
+              </label>
+              <button class="btn btn-secondary" id="joinGroupBtn">Join Group</button>
+            </div>
           </div>
             <div class="composer-section">
               <h3>🎶 Session Composer</h3>
@@ -837,6 +848,10 @@
               <button class="btn btn-secondary" id="addTrack">
                 ➕ Add Layer
               </button>
+              <h4 style="margin-top:15px">Custom Frequency Program</h4>
+              <textarea id="freqProgram" rows="3" placeholder="duration base beat per line"></textarea>
+              <button class="btn btn-secondary" id="runProgram">▶ Run Program</button>
+              <button class="btn btn-secondary" id="stopProgram">■ Stop</button>
             </div>
 
           <div class="session-controls">
@@ -1017,6 +1032,9 @@
           this.eegSocket = null;
           this.eegEnabled = false;
           this.eegAdjust = {};
+          this.groupId = null;
+          this.programTimers = [];
+          this.entropyInterval = null;
 
           this.focusPresets = {
             10: {
@@ -1277,6 +1295,27 @@
                 this.disconnectEEG();
               }
             });
+
+          document
+            .getElementById("joinGroupBtn")
+            .addEventListener("click", () => this.joinGroup());
+
+          document
+            .getElementById("runProgram")
+            .addEventListener("click", () => this.startFrequencyProgram());
+          document
+            .getElementById("stopProgram")
+            .addEventListener("click", () => this.stopFrequencyProgram());
+
+          document
+            .getElementById("entropyMode")
+            .addEventListener("change", (e) => {
+              if (e.target.checked) {
+                this.startEntropyDrift();
+              } else {
+                this.stopEntropyDrift();
+              }
+            });
         }
 
         connectEEG() {
@@ -1304,6 +1343,23 @@
           }
           this.eegEnabled = false;
           this.eegAdjust = {};
+        }
+
+        joinGroup() {
+          const id = document.getElementById("groupId").value.trim();
+          if (!id) return;
+          this.groupId = id;
+          const msg = JSON.stringify({ type: "join", group: id });
+          if (!this.eegSocket || this.eegSocket.readyState !== WebSocket.OPEN) {
+            this.connectEEG();
+            this.eegSocket.addEventListener(
+              "open",
+              () => this.eegSocket?.send(msg),
+              { once: true },
+            );
+          } else {
+            this.eegSocket.send(msg);
+          }
         }
 
         handleEEGData(raw) {
@@ -1820,6 +1876,26 @@
           }
         }
 
+        startEntropyDrift() {
+          this.stopEntropyDrift();
+          this.entropyInterval = setInterval(() => {
+            const base = parseFloat(document.getElementById("baseFreq").value);
+            const beat = parseFloat(document.getElementById("beatFreq").value);
+            const newBase = base + (Math.random() - 0.5) * 2;
+            const newBeat = beat + (Math.random() - 0.5) * 0.5;
+            document.getElementById("baseFreq").value = newBase.toFixed(2);
+            document.getElementById("beatFreq").value = newBeat.toFixed(2);
+            this.updateFrequencies();
+          }, 5000);
+        }
+
+        stopEntropyDrift() {
+          if (this.entropyInterval) {
+            clearInterval(this.entropyInterval);
+            this.entropyInterval = null;
+          }
+        }
+
         speakAffirmation() {
           if (!("speechSynthesis" in window)) return;
           const text =
@@ -2063,6 +2139,32 @@
             );
             this.extraEngines.push(eng);
           }
+        }
+
+        startFrequencyProgram() {
+          this.stopFrequencyProgram();
+          const lines = document
+            .getElementById("freqProgram")
+            .value.split(/\n+/)
+            .map((l) => l.trim())
+            .filter(Boolean);
+          let offset = 0;
+          lines.forEach((line) => {
+            const [dur, base, beat] = line.split(/\s+/).map(parseFloat);
+            if (!dur || !base || !beat) return;
+            const t = setTimeout(() => {
+              document.getElementById("baseFreq").value = base;
+              document.getElementById("beatFreq").value = beat;
+              this.updateFrequencies();
+            }, offset * 1000);
+            this.programTimers.push(t);
+            offset += dur;
+          });
+        }
+
+        stopFrequencyProgram() {
+          this.programTimers.forEach((t) => clearTimeout(t));
+          this.programTimers = [];
         }
 
         analyzeJournalAI() {
