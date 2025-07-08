@@ -246,6 +246,12 @@
         background: rgba(255, 255, 255, 0.2);
       }
 
+      .bookmark-btn.active {
+        background: linear-gradient(45deg, #ff0088, #fff200);
+        color: #000;
+        box-shadow: 0 0 20px rgba(255, 0, 136, 0.6);
+      }
+
       .rebal-container {
         position: relative;
         width: 300px;
@@ -904,6 +910,12 @@
               </button>
               <button class="btn btn-secondary bookmark-btn" data-slot="10">
                 Slot 10
+              </button>
+              <button class="btn btn-secondary bookmark-btn" data-slot="11">
+                Slot 11
+              </button>
+              <button class="btn btn-secondary bookmark-btn" data-slot="12">
+                Slot 12
               </button>
             </div>
           </div>
@@ -2247,17 +2259,22 @@
             affirmationMode: document.getElementById("affirmationMode").checked,
             eegFeedback: document.getElementById("eegFeedback").checked,
           };
-          localStorage.setItem(
-            `hemilab_bookmark_${slot}`,
-            JSON.stringify(settings),
-          );
-          alert(`🔖 Settings saved to Slot ${slot}!`);
-        }
+        localStorage.setItem(
+          `hemilab_bookmark_${slot}`,
+          JSON.stringify(settings),
+        );
+        const btn = document.querySelector(`.bookmark-btn[data-slot="${slot}"]`);
+        if (btn) btn.classList.add("active");
+        alert(`🔖 Settings saved to Slot ${slot}!`);
+      }
 
         initializeBookmarks() {
           document.querySelectorAll(".bookmark-btn").forEach((btn) => {
+            const slot = btn.dataset.slot;
+            if (localStorage.getItem(`hemilab_bookmark_${slot}`)) {
+              btn.classList.add("active");
+            }
             btn.addEventListener("click", () => {
-              const slot = btn.dataset.slot;
               this.bookmarkSettings(slot);
             });
           });
