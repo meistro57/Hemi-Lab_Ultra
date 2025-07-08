@@ -1643,25 +1643,34 @@
 
           const now = this.audioContext.currentTime;
           if (this.leftOscillator && this.rightOscillator) {
+            if (this.leftOscillator.frequency.cancelScheduledValues) {
+              this.leftOscillator.frequency.cancelScheduledValues(now);
+            }
             if (this.leftOscillator.frequency.setTargetAtTime) {
-              this.leftOscillator.frequency.setTargetAtTime(baseFreq, now, 0.05);
+              this.leftOscillator.frequency.setTargetAtTime(baseFreq, now, 0.1);
             } else {
               this.leftOscillator.frequency.value = baseFreq;
             }
             const target = baseFreq + beatFreq;
+            if (this.rightOscillator.frequency.cancelScheduledValues) {
+              this.rightOscillator.frequency.cancelScheduledValues(now);
+            }
             if (this.rightOscillator.frequency.setTargetAtTime) {
-              this.rightOscillator.frequency.setTargetAtTime(target, now, 0.05);
+              this.rightOscillator.frequency.setTargetAtTime(target, now, 0.1);
             } else {
               this.rightOscillator.frequency.value = target;
             }
           }
 
           if (this.isochronicOscillator) {
+            if (this.isochronicOscillator.frequency.cancelScheduledValues) {
+              this.isochronicOscillator.frequency.cancelScheduledValues(now);
+            }
             if (this.isochronicOscillator.frequency.setTargetAtTime) {
               this.isochronicOscillator.frequency.setTargetAtTime(
                 beatFreq,
                 now,
-                0.05,
+                0.1,
               );
             } else {
               this.isochronicOscillator.frequency.value = beatFreq;
@@ -1670,8 +1679,11 @@
 
           if (this.phaseDelayNode) {
             const delay = phaseShift / 360 / baseFreq;
+            if (this.phaseDelayNode.delayTime.cancelScheduledValues) {
+              this.phaseDelayNode.delayTime.cancelScheduledValues(now);
+            }
             if (this.phaseDelayNode.delayTime.setTargetAtTime) {
-              this.phaseDelayNode.delayTime.setTargetAtTime(delay, now, 0.05);
+              this.phaseDelayNode.delayTime.setTargetAtTime(delay, now, 0.1);
             } else {
               this.phaseDelayNode.delayTime.value = delay;
             }

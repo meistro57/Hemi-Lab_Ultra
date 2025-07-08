@@ -40,8 +40,11 @@ class BinauralEngine {
   update(baseFreq, beatFreq) {
     const now = this.context.currentTime;
     if (baseFreq !== undefined && this.leftOsc) {
+      if (this.leftOsc.frequency.cancelScheduledValues) {
+        this.leftOsc.frequency.cancelScheduledValues(now);
+      }
       if (this.leftOsc.frequency.setTargetAtTime) {
-        this.leftOsc.frequency.setTargetAtTime(baseFreq, now, 0.05);
+        this.leftOsc.frequency.setTargetAtTime(baseFreq, now, 0.1);
       }
       this.leftOsc.frequency.value = baseFreq;
     }
@@ -49,8 +52,11 @@ class BinauralEngine {
       const base = baseFreq !== undefined ? baseFreq : this.leftOsc.frequency.value;
       if (beatFreq !== undefined) {
         const freq = base + beatFreq;
+        if (this.rightOsc.frequency.cancelScheduledValues) {
+          this.rightOsc.frequency.cancelScheduledValues(now);
+        }
         if (this.rightOsc.frequency.setTargetAtTime) {
-          this.rightOsc.frequency.setTargetAtTime(freq, now, 0.05);
+          this.rightOsc.frequency.setTargetAtTime(freq, now, 0.1);
         }
         this.rightOsc.frequency.value = freq;
       }
@@ -59,8 +65,11 @@ class BinauralEngine {
 
   setVolume(vol) {
     const now = this.context.currentTime;
+    if (this.gainNode.gain.cancelScheduledValues) {
+      this.gainNode.gain.cancelScheduledValues(now);
+    }
     if (this.gainNode.gain.setTargetAtTime) {
-      this.gainNode.gain.setTargetAtTime(vol, now, 0.05);
+      this.gainNode.gain.setTargetAtTime(vol, now, 0.1);
     }
     this.gainNode.gain.value = vol;
   }
@@ -99,11 +108,20 @@ class BinauralEngine {
     this.setVolume(0);
     const stopAt = now + 0.1;
     if (this.leftOsc) {
+      if (this.leftOsc.frequency && this.leftOsc.frequency.cancelScheduledValues) {
+        this.leftOsc.frequency.cancelScheduledValues(now);
+      }
       if (this.leftOsc.stop) this.leftOsc.stop(stopAt);
       this.leftOsc.disconnect();
       this.leftOsc = null;
     }
     if (this.rightOsc) {
+      if (
+        this.rightOsc.frequency &&
+        this.rightOsc.frequency.cancelScheduledValues
+      ) {
+        this.rightOsc.frequency.cancelScheduledValues(now);
+      }
       if (this.rightOsc.stop) this.rightOsc.stop(stopAt);
       this.rightOsc.disconnect();
       this.rightOsc = null;
