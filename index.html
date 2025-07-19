@@ -222,6 +222,23 @@
         margin-bottom: 10px;
       }
 
+      .help-icon {
+        margin-left: 4px;
+        cursor: help;
+      }
+
+      .help-tooltip {
+        position: fixed;
+        background: rgba(0, 0, 0, 0.85);
+        color: #fff;
+        padding: 5px 8px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        pointer-events: none;
+        z-index: 2000;
+        display: none;
+      }
+
       .session-controls {
         display: flex;
         gap: 15px;
@@ -877,16 +894,14 @@
             </div>
           </div>
             <div class="composer-section">
-              <h3>🎶 Session Composer</h3>
+              <h3>🎶 Session Composer <span class="help-icon" data-help="Create layered binaural tracks or run custom frequency programs">❔</span></h3>
               <p class="composer-desc">
                 Layer additional frequencies to craft complex binaural mixes.
               </p>
               <div id="composerTracks"></div>
-              <button class="btn btn-secondary" id="addTrack">
-                ➕ Add Layer
-              </button>
-              <h4 style="margin-top:15px">Custom Frequency Program</h4>
-              <textarea id="freqProgram" rows="3" placeholder="duration base beat per line"></textarea>
+              <button class="btn btn-secondary" id="addTrack" data-help="Add another binaural layer">➕ Add Layer</button>
+              <h4 style="margin-top:15px">Custom Frequency Program <span class="help-icon" data-help="Enter: duration base beat on each line (seconds & Hz)">❔</span></h4>
+              <textarea id="freqProgram" rows="3" placeholder="duration base beat per line" data-help="Example: '60 110 4' will play 60s at 110Hz base with 4Hz beat"></textarea>
               <button class="btn btn-secondary" id="runProgram">▶ Run Program</button>
               <button class="btn btn-secondary" id="stopProgram">■ Stop</button>
             </div>
@@ -2513,13 +2528,36 @@
         }
       }
 
+      function attachHelpTooltip(el, text) {
+        const tip = document.createElement("div");
+        tip.className = "help-tooltip";
+        tip.textContent = text;
+        document.body.appendChild(tip);
+        el.addEventListener("mouseenter", () => {
+          const r = el.getBoundingClientRect();
+          tip.style.left = `${r.left + window.pageXOffset}px`;
+          tip.style.top = `${r.bottom + 8 + window.pageYOffset}px`;
+          tip.style.display = "block";
+        });
+        el.addEventListener("mouseleave", () => {
+          tip.style.display = "none";
+        });
+      }
+
+      function initHelpTooltips() {
+        document
+          .querySelectorAll("[data-help]")
+          .forEach((el) => attachHelpTooltip(el, el.dataset.help));
+      }
+
       // Initialize the application
       let app;
 
       // Create app instance on DOM ready
       document.addEventListener("DOMContentLoaded", () => {
         app = new HemiLabGateway();
-          const themeToggle = document.getElementById("themeToggle");
+        initHelpTooltips();
+        const themeToggle = document.getElementById("themeToggle");
           const storedTheme = localStorage.getItem("hemilab_theme") || "dark";
           if (storedTheme === "light") {
             document.body.classList.add("light-mode");
