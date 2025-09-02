@@ -1,5 +1,5 @@
 class BinauralEngine {
-  constructor(context, gainNode) {
+  constructor(context, gainNode, compressorOptions = {}) {
     this.context =
       context ||
       new (typeof AudioContext !== "undefined"
@@ -11,7 +11,19 @@ class BinauralEngine {
     this.filter = this.context.createBiquadFilter();
     this.filter.type = "lowpass";
     this.filter.frequency.value = 12000;
-    this.filter.connect(this.gainNode);
+    this.compressor = this.context.createDynamicsCompressor();
+    const {
+      threshold = -24,
+      ratio = 12,
+      attack = 0.003,
+      release = 0.25,
+    } = compressorOptions;
+    this.compressor.threshold.value = threshold;
+    this.compressor.ratio.value = ratio;
+    this.compressor.attack.value = attack;
+    this.compressor.release.value = release;
+    this.filter.connect(this.compressor);
+    this.compressor.connect(this.gainNode);
     this.gainNode.connect(this.context.destination);
     this.driftInterval = null;
     this.driftStep = 0;
@@ -81,6 +93,21 @@ class BinauralEngine {
     if (this.leftOsc) this.leftOsc.type = type;
     if (this.rightOsc) this.rightOsc.type = type;
   }
+
+  setCompressorSettings(settings = {}) {
+    if (settings.threshold !== undefined) {
+      this.compressor.threshold.value = settings.threshold;
+    }
+    if (settings.ratio !== undefined) {
+      this.compressor.ratio.value = settings.ratio;
+    }
+    if (settings.attack !== undefined) {
+      this.compressor.attack.value = settings.attack;
+    }
+    if (settings.release !== undefined) {
+      this.compressor.release.value = settings.release;
+    }
+  }
   startIsochronic(rate = 10, volume = 0.1) {
     this.stopIsochronic();
     this.isochronicOsc = this.context.createOscillator();
@@ -89,7 +116,7 @@ class BinauralEngine {
     this.isochronicOsc.frequency.value = rate;
     this.isochronicOsc.connect(this.isoGain);
     this.isoGain.gain.value = volume;
-    this.isoGain.connect(this.gainNode);
+    this.isoGain.connect(this.compressor);
     if (this.isochronicOsc.start) this.isochronicOsc.start();
   }
 
