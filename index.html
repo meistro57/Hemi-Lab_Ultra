@@ -1103,6 +1103,8 @@
           this.rightOscillator = null;
           this.isochronicOscillator = null;
           this.deepBassOscillator = null;
+          this.deepBassGain = null;
+          this.deepBassFade = 0.05;
           this.phaseDelayNode = null;
           this.leftAnalyser = null;
           this.rightAnalyser = null;
@@ -1675,22 +1677,50 @@
           }
         }
 
-        startDeepBass(volume) {
+        startDeepBass(volume, fadeDuration = this.deepBassFade) {
+          const now = this.audioContext.currentTime;
           this.deepBassOscillator = this.audioContext.createOscillator();
-          const bassGain = this.audioContext.createGain();
+          this.deepBassGain = this.audioContext.createGain();
           this.deepBassOscillator.type = "sine";
           this.deepBassOscillator.frequency.value = 60;
-          this.deepBassOscillator.connect(bassGain);
-          bassGain.connect(this.gainNode);
-          bassGain.gain.value = volume * 0.3;
-          this.deepBassOscillator.start();
+          this.deepBassOscillator.connect(this.deepBassGain);
+          this.deepBassGain.connect(this.gainNode);
+          this.deepBassGain.gain.setValueAtTime(0, now);
+          if (this.deepBassGain.gain.linearRampToValueAtTime) {
+            this.deepBassGain.gain.linearRampToValueAtTime(
+              volume * 0.3,
+              now + fadeDuration,
+            );
+          } else {
+            this.deepBassGain.gain.value = volume * 0.3;
+          }
+          this.deepBassOscillator.start(now);
         }
 
-        stopDeepBass() {
-          if (this.deepBassOscillator) {
-            this.deepBassOscillator.stop();
-            this.deepBassOscillator.disconnect();
-            this.deepBassOscillator = null;
+        stopDeepBass(fadeDuration = this.deepBassFade) {
+          if (this.deepBassOscillator && this.deepBassGain) {
+            const now = this.audioContext.currentTime;
+            this.deepBassGain.gain.cancelScheduledValues(now);
+            this.deepBassGain.gain.setValueAtTime(
+              this.deepBassGain.gain.value,
+              now,
+            );
+            if (this.deepBassGain.gain.linearRampToValueAtTime) {
+              this.deepBassGain.gain.linearRampToValueAtTime(0, now + fadeDuration);
+            } else {
+              this.deepBassGain.gain.value = 0;
+            }
+            this.deepBassOscillator.stop(now + fadeDuration);
+            setTimeout(() => {
+              if (this.deepBassOscillator) {
+                this.deepBassOscillator.disconnect();
+                this.deepBassOscillator = null;
+              }
+              if (this.deepBassGain) {
+                this.deepBassGain.disconnect();
+                this.deepBassGain = null;
+              }
+            }, fadeDuration * 1000);
           }
         }
 
