@@ -57,4 +57,24 @@ describe('BinauralEngine', () => {
     expect(engine.isochronicOsc).toBeNull();
     engine.stop();
   });
+
+  test('compressor settings can be updated', () => {
+    const engine = new BinauralEngine(null, null, {
+      threshold: -30,
+      ratio: 10,
+      attack: 0.01,
+      release: 0.5,
+    });
+    expect(engine.compressor.threshold.value).toBeCloseTo(-30);
+    engine.setCompressorSettings({
+      threshold: -20,
+      ratio: 4,
+      attack: 0.005,
+      release: 0.3,
+    });
+    expect(engine.compressor.threshold.value).toBeCloseTo(-20);
+    expect(engine.compressor.ratio.value).toBeCloseTo(4);
+    expect(engine.compressor.attack.value).toBeCloseTo(0.005);
+    expect(engine.compressor.release.value).toBeCloseTo(0.3);
+  });
 });

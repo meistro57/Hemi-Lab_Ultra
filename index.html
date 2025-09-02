@@ -791,6 +791,61 @@
               />
             </div>
             <div class="control-group">
+              <label>
+                Compressor Threshold (dB):
+                <span id="compThresholdValue">-24</span>
+              </label>
+              <input
+                type="range"
+                class="slider"
+                id="compThreshold"
+                min="-100"
+                max="0"
+                value="-24"
+              />
+            </div>
+            <div class="control-group">
+              <label>
+                Compressor Ratio: <span id="compRatioValue">12</span>
+              </label>
+              <input
+                type="range"
+                class="slider"
+                id="compRatio"
+                min="1"
+                max="20"
+                value="12"
+              />
+            </div>
+            <div class="control-group">
+              <label>
+                Attack (s): <span id="compAttackValue">0.003</span>
+              </label>
+              <input
+                type="range"
+                class="slider"
+                id="compAttack"
+                min="0"
+                max="1"
+                step="0.001"
+                value="0.003"
+              />
+            </div>
+            <div class="control-group">
+              <label>
+                Release (s): <span id="compReleaseValue">0.25</span>
+              </label>
+              <input
+                type="range"
+                class="slider"
+                id="compRelease"
+                min="0"
+                max="1"
+                step="0.01"
+                value="0.25"
+              />
+            </div>
+            <div class="control-group">
               <label
                 >Phase Shift (°): <span id="phaseShiftValue">0</span></label
               >
@@ -1163,7 +1218,21 @@
               window.webkitAudioContext)();
             this.gainNode = this.audioContext.createGain();
             this.gainNode.connect(this.audioContext.destination);
-            this.engine = new BinauralEngine(this.audioContext, this.gainNode);
+            const compSettings = {
+              threshold: parseFloat(
+                document.getElementById("compThreshold").value,
+              ),
+              ratio: parseFloat(document.getElementById("compRatio").value),
+              attack: parseFloat(document.getElementById("compAttack").value),
+              release: parseFloat(
+                document.getElementById("compRelease").value,
+              ),
+            };
+            this.engine = new BinauralEngine(
+              this.audioContext,
+              this.gainNode,
+              compSettings,
+            );
             this.initEqualizer();
           }
 
@@ -1232,6 +1301,54 @@
               }
             }
           });
+
+          document
+            .getElementById("compThreshold")
+            .addEventListener("input", (e) => {
+              document.getElementById("compThresholdValue").textContent =
+                e.target.value;
+              if (this.engine) {
+                this.engine.setCompressorSettings({
+                  threshold: parseFloat(e.target.value),
+                });
+              }
+            });
+
+          document
+            .getElementById("compRatio")
+            .addEventListener("input", (e) => {
+              document.getElementById("compRatioValue").textContent =
+                e.target.value;
+              if (this.engine) {
+                this.engine.setCompressorSettings({
+                  ratio: parseFloat(e.target.value),
+                });
+              }
+            });
+
+          document
+            .getElementById("compAttack")
+            .addEventListener("input", (e) => {
+              document.getElementById("compAttackValue").textContent =
+                e.target.value;
+              if (this.engine) {
+                this.engine.setCompressorSettings({
+                  attack: parseFloat(e.target.value),
+                });
+              }
+            });
+
+          document
+            .getElementById("compRelease")
+            .addEventListener("input", (e) => {
+              document.getElementById("compReleaseValue").textContent =
+                e.target.value;
+              if (this.engine) {
+                this.engine.setCompressorSettings({
+                  release: parseFloat(e.target.value),
+                });
+              }
+            });
 
           document
             .getElementById("phaseShift")
