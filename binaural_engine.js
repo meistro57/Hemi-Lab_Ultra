@@ -27,13 +27,17 @@ class BinauralEngine {
     this.compressor.ratio.value = ratio;
     this.compressor.attack.value = attack;
     this.compressor.release.value = release;
+    this.isoGain = this.context.createGain();
+    this.isoGain.gain.value = 1;
     this.filter.connect(this.compressor);
-    this.compressor.connect(this.gainNode);
+    this.compressor.connect(this.isoGain);
+    this.isoGain.connect(this.gainNode);
     this.gainNode.connect(this.context.destination);
     this.driftInterval = null;
     this.driftStep = 0;
     this.isochronicOsc = null;
-    this.isoGain = null;
+    this.isoModGain = null;
+    this.isoFilter = null;
     this.waveType = "sine";
   }
 
@@ -124,15 +128,31 @@ class BinauralEngine {
       this.compressor.release.value = settings.release;
     }
   }
-  startIsochronic(rate = 10, volume = 0.1) {
+  startIsochronic(rate = 10, depth = 1) {
     this.stopIsochronic();
     this.isochronicOsc = this.context.createOscillator();
-    this.isoGain = this.context.createGain();
-    this.isochronicOsc.type = "square";
+    const harmonics = 32;
+    const real = new Float32Array(harmonics + 1);
+    const imag = new Float32Array(harmonics + 1);
+    for (let i = 1; i <= harmonics; i += 2) {
+      imag[i] = 1 / i;
+    }
+    const wave = this.context.createPeriodicWave(real, imag);
+    this.isochronicOsc.setPeriodicWave(wave);
     this.isochronicOsc.frequency.value = rate;
-    this.isochronicOsc.connect(this.isoGain);
-    this.isoGain.gain.value = volume;
-    this.isoGain.connect(this.compressor);
+
+    this.isoFilter = this.context.createBiquadFilter();
+    this.isoFilter.type = "lowpass";
+    this.isoFilter.frequency.value = rate * 4;
+
+    this.isoModGain = this.context.createGain();
+    this.isoModGain.gain.value = depth / 2;
+
+    this.isochronicOsc.connect(this.isoFilter);
+    this.isoFilter.connect(this.isoModGain);
+    this.isoGain.gain.value = 1 - depth / 2;
+    this.isoModGain.connect(this.isoGain.gain);
+
     if (this.isochronicOsc.start) this.isochronicOsc.start();
   }
 
@@ -140,10 +160,17 @@ class BinauralEngine {
     if (this.isochronicOsc) {
       if (this.isochronicOsc.stop) this.isochronicOsc.stop();
       this.isochronicOsc.disconnect();
-      this.isoGain.disconnect();
       this.isochronicOsc = null;
-      this.isoGain = null;
     }
+    if (this.isoFilter) {
+      this.isoFilter.disconnect();
+      this.isoFilter = null;
+    }
+    if (this.isoModGain) {
+      this.isoModGain.disconnect();
+      this.isoModGain = null;
+    }
+    this.isoGain.gain.value = 1;
   }
 
   startDrift(period = 60, min = 3, max = 7) {

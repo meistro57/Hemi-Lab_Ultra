@@ -51,10 +51,12 @@ describe('BinauralEngine', () => {
   test('isochronic oscillator starts and stops', () => {
     const engine = new BinauralEngine();
     engine.start(100, 4);
-    engine.startIsochronic(5, 0.2);
+    engine.startIsochronic(5, 0.5);
     expect(engine.isochronicOsc.frequency.value).toBe(5);
+    expect(engine.isoGain.gain.value).toBeCloseTo(0.75);
     engine.stopIsochronic();
     expect(engine.isochronicOsc).toBeNull();
+    expect(engine.isoGain.gain.value).toBeCloseTo(1);
     engine.stop();
   });
 
