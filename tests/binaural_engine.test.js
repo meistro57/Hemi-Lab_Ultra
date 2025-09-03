@@ -77,4 +77,15 @@ describe('BinauralEngine', () => {
     expect(engine.compressor.attack.value).toBeCloseTo(0.005);
     expect(engine.compressor.release.value).toBeCloseTo(0.3);
   });
+
+  test('filter settings can be adjusted', () => {
+    const engine = new BinauralEngine(null, null, {}, 'highpass', 5000);
+    expect(engine.filter.type).toBe('highpass');
+    expect(engine.filter.frequency.value).toBeCloseTo(5000);
+    engine.setFilter('none');
+    expect(engine.filter.type).toBe('allpass');
+    engine.setFilter('lowpass', 200);
+    expect(engine.filter.type).toBe('lowpass');
+    expect(engine.filter.frequency.value).toBeCloseTo(200);
+  });
 });
