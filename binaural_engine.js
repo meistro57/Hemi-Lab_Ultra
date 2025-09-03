@@ -1,5 +1,11 @@
 class BinauralEngine {
-  constructor(context, gainNode, compressorOptions = {}) {
+  constructor(
+    context,
+    gainNode,
+    compressorOptions = {},
+    filterType = "lowpass",
+    filterFrequency = 12000,
+  ) {
     this.context =
       context ||
       new (typeof AudioContext !== "undefined"
@@ -9,8 +15,7 @@ class BinauralEngine {
     this.rightOsc = null;
     this.gainNode = gainNode || this.context.createGain();
     this.filter = this.context.createBiquadFilter();
-    this.filter.type = "lowpass";
-    this.filter.frequency.value = 12000;
+    this.setFilter(filterType, filterFrequency);
     this.compressor = this.context.createDynamicsCompressor();
     const {
       threshold = -24,
@@ -92,6 +97,17 @@ class BinauralEngine {
     this.waveType = type;
     if (this.leftOsc) this.leftOsc.type = type;
     if (this.rightOsc) this.rightOsc.type = type;
+  }
+
+  setFilter(type = "lowpass", frequency = 12000) {
+    if (type === "none") {
+      this.filter.type = "allpass";
+    } else {
+      this.filter.type = type;
+      if (frequency !== undefined) {
+        this.filter.frequency.value = frequency;
+      }
+    }
   }
 
   setCompressorSettings(settings = {}) {

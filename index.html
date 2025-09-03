@@ -846,6 +846,28 @@
               />
             </div>
             <div class="control-group">
+              <label>Filter Type:</label>
+              <select id="filterType">
+                <option value="none">None</option>
+                <option value="lowpass" selected>Low-pass</option>
+                <option value="highpass">High-pass</option>
+                <option value="bandpass">Band-pass</option>
+              </select>
+            </div>
+            <div class="control-group">
+              <label>
+                Cutoff Frequency (Hz): <span id="filterFreqValue">12000</span>
+              </label>
+              <input
+                type="range"
+                class="slider"
+                id="filterFreq"
+                min="20"
+                max="20000"
+                value="12000"
+              />
+            </div>
+            <div class="control-group">
               <label
                 >Phase Shift (°): <span id="phaseShiftValue">0</span></label
               >
@@ -1228,10 +1250,16 @@
                 document.getElementById("compRelease").value,
               ),
             };
+            const filterType = document.getElementById("filterType").value;
+            const filterFreq = parseFloat(
+              document.getElementById("filterFreq").value,
+            );
             this.engine = new BinauralEngine(
               this.audioContext,
               this.gainNode,
               compSettings,
+              filterType,
+              filterFreq,
             );
             this.initEqualizer();
           }
@@ -1349,6 +1377,33 @@
                 });
               }
             });
+
+          document
+            .getElementById("filterType")
+            .addEventListener("change", (e) => {
+              const freqSlider = document.getElementById("filterFreq");
+              freqSlider.disabled = e.target.value === "none";
+              if (this.engine) {
+                this.engine.setFilter(
+                  e.target.value,
+                  parseFloat(freqSlider.value),
+                );
+              }
+            });
+
+          document
+            .getElementById("filterFreq")
+            .addEventListener("input", (e) => {
+              document.getElementById("filterFreqValue").textContent =
+                e.target.value;
+              const type = document.getElementById("filterType").value;
+              if (this.engine && type !== "none") {
+                this.engine.setFilter(type, parseFloat(e.target.value));
+              }
+            });
+
+          document.getElementById("filterFreq").disabled =
+            document.getElementById("filterType").value === "none";
 
           document
             .getElementById("phaseShift")
@@ -1737,6 +1792,9 @@
               const eng = new BinauralEngine(
                 this.audioContext,
                 this.audioContext.createGain(),
+                {},
+                document.getElementById("filterType").value,
+                parseFloat(document.getElementById("filterFreq").value),
               );
               eng.gainNode.connect(this.gainNode);
               eng.start(b, beat, vol, waveType);
@@ -2373,6 +2431,9 @@
             const eng = new BinauralEngine(
               this.audioContext,
               this.audioContext.createGain(),
+              {},
+              document.getElementById("filterType").value,
+              parseFloat(document.getElementById("filterFreq").value),
             );
             eng.gainNode.connect(this.gainNode);
             eng.start(
