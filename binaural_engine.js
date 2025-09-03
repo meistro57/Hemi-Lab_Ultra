@@ -173,25 +173,58 @@ class BinauralEngine {
     this.isoGain.gain.value = 1;
   }
 
-  startDrift(period = 60, min = 3, max = 7) {
+  startDrift(period = 60, min = 3, max = 7, waveform = "sine") {
     this.stopDrift();
     this.driftPeriod = period;
     this.driftMin = min;
     this.driftMax = max;
-    this.driftStep = 0;
-    this.driftInterval = setInterval(() => {
-      this.driftStep = (this.driftStep + 0.1) % this.driftPeriod;
-      const phase = this.driftStep / this.driftPeriod;
-      const progress = phase < 0.5 ? phase * 2 : (1 - phase) * 2;
-      const beat = this.driftMin + (this.driftMax - this.driftMin) * progress;
-      this.update(undefined, beat);
-    }, 100);
+    this.driftWaveform = waveform;
+
+    const schedule = () => {
+      if (!this.rightOsc) return;
+      const base = this.leftOsc ? this.leftOsc.frequency.value : 0;
+      const param = this.rightOsc.frequency;
+      const startTime = this.context.currentTime;
+      param.cancelScheduledValues(startTime);
+
+      if (this.driftWaveform === "sine") {
+        const steps = 128;
+        const curve = new Float32Array(steps);
+        for (let i = 0; i < steps; i++) {
+          const phase = i / (steps - 1);
+          const beat =
+            this.driftMin +
+            (this.driftMax - this.driftMin) *
+              0.5 *
+              (1 - Math.cos(2 * Math.PI * phase));
+          curve[i] = base + beat;
+        }
+        param.setValueCurveAtTime(curve, startTime, this.driftPeriod);
+      } else {
+        param.setValueAtTime(base + this.driftMin, startTime);
+        param.linearRampToValueAtTime(
+          base + this.driftMax,
+          startTime + this.driftPeriod / 2,
+        );
+        param.linearRampToValueAtTime(
+          base + this.driftMin,
+          startTime + this.driftPeriod,
+        );
+      }
+
+      this.driftTimeout = setTimeout(schedule, this.driftPeriod * 1000);
+    };
+
+    schedule();
   }
 
   stopDrift() {
-    if (this.driftInterval) {
-      clearInterval(this.driftInterval);
-      this.driftInterval = null;
+    if (this.driftTimeout) {
+      clearTimeout(this.driftTimeout);
+      this.driftTimeout = null;
+    }
+    if (this.rightOsc && this.rightOsc.frequency) {
+      this.rightOsc.frequency.cancelScheduledValues(this.context.currentTime);
     }
   }
 

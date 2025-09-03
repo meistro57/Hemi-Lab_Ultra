@@ -27,15 +27,28 @@ describe('BinauralEngine', () => {
     expect(engine.gainNode.gain.value).toBeCloseTo(0.2);
   });
 
-  test('drift mode sweeps beat frequency', () => {
+  test('drift mode schedules sine waveform with setValueCurveAtTime', () => {
     const engine = new BinauralEngine();
     engine.start(100, 3);
-    engine.startDrift(1, 3, 7);
-    expect(engine.rightOsc.frequency.value).toBeCloseTo(103);
-    jest.advanceTimersByTime(500);
-    expect(engine.rightOsc.frequency.value).toBeCloseTo(107, 1);
-    jest.advanceTimersByTime(500);
-    expect(engine.rightOsc.frequency.value).toBeCloseTo(103, 1);
+    const spy = jest.spyOn(engine.rightOsc.frequency, 'setValueCurveAtTime');
+    engine.startDrift(1, 3, 7, 'sine');
+    expect(spy).toHaveBeenCalledTimes(1);
+    jest.advanceTimersByTime(1000);
+    expect(spy).toHaveBeenCalledTimes(2);
+    engine.stop();
+  });
+
+  test('drift mode schedules triangle waveform with linear ramps', () => {
+    const engine = new BinauralEngine();
+    engine.start(100, 3);
+    const spy = jest.spyOn(engine.rightOsc.frequency, 'linearRampToValueAtTime');
+    const now = engine.context.currentTime;
+    engine.startDrift(1, 3, 7, 'triangle');
+    expect(spy).toHaveBeenCalledTimes(2);
+    expect(spy.mock.calls[0][0]).toBe(107);
+    expect(spy.mock.calls[0][1]).toBeCloseTo(now + 0.5);
+    expect(spy.mock.calls[1][0]).toBe(103);
+    expect(spy.mock.calls[1][1]).toBeCloseTo(now + 1);
     engine.stop();
   });
 
