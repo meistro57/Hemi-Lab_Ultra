@@ -924,6 +924,13 @@
               </label>
             </div>
             <div class="control-group">
+              <label for="driftWaveform">Drift Waveform</label>
+              <select id="driftWaveform">
+                <option value="sine">Sine</option>
+                <option value="triangle">Triangle</option>
+              </select>
+            </div>
+            <div class="control-group">
               <label>
                 <input type="checkbox" id="entropyMode" /> Entropy Drift
               </label>
@@ -1483,10 +1490,24 @@
               .addEventListener("change", (e) => {
                 if (this.engine) {
                   if (e.target.checked) {
-                    this.engine.startDrift();
+                    const wave = document.getElementById("driftWaveform").value;
+                    this.engine.startDrift(undefined, undefined, undefined, wave);
                   } else {
                     this.engine.stopDrift();
                   }
+                }
+              });
+
+            document
+              .getElementById("driftWaveform")
+              .addEventListener("change", (e) => {
+                if (this.engine && document.getElementById("driftMode").checked) {
+                  this.engine.startDrift(
+                    undefined,
+                    undefined,
+                    undefined,
+                    e.target.value,
+                  );
                 }
               });
 
@@ -1779,7 +1800,8 @@
             this.engine.setWaveType(waveType);
             this.engine.gainNode = this.gainNode;
             if (document.getElementById("driftMode").checked) {
-              this.engine.startDrift();
+              const wave = document.getElementById("driftWaveform").value;
+              this.engine.startDrift(undefined, undefined, undefined, wave);
             }
 
             // Start composed layers
@@ -2485,6 +2507,7 @@
             isochronicMode: document.getElementById("isochronicMode").checked,
             deepBassMode: document.getElementById("deepBassMode").checked,
             driftMode: document.getElementById("driftMode").checked,
+            driftWaveform: document.getElementById("driftWaveform").value,
             entropyMode: document.getElementById("entropyMode").checked,
             rebalMode: document.getElementById("rebalMode").checked,
             breathCoachMode: document.getElementById("breathCoachMode").checked,
