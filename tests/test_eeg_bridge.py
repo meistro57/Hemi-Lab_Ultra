@@ -9,6 +9,7 @@ import websockets
 
 try:
     import scipy  # noqa: F401
+
     sys.path.append(str(Path(__file__).resolve().parents[1] / "python"))
     import eeg_bridge
 except Exception:  # pragma: no cover - skip if dependencies missing
@@ -32,36 +33,44 @@ def bridge() -> eeg_bridge.EEGBridge:
     br.loop = asyncio.new_event_loop()
     br.buffer = []
     br.output_file = None
-    return br
+    yield br
+    if br.loop and not br.loop.is_closed():
+        br.loop.close()
 
 
-@pytest.mark.asyncio
-async def test_broadcast_sends_json_to_clients(bridge: eeg_bridge.EEGBridge) -> None:
-    ws1, ws2 = DummyWebSocket(), DummyWebSocket()
-    bridge.clients = {ws1, ws2}
-    metrics = {"channels": {"ch1": {"alpha": 1.0}}, "average": {"alpha": 1.0}}
+def test_broadcast_sends_json_to_clients(bridge: eeg_bridge.EEGBridge) -> None:
+    async def main() -> None:
+        bridge.loop = asyncio.get_running_loop()
+        ws1, ws2 = DummyWebSocket(), DummyWebSocket()
+        bridge.clients = {ws1, ws2}
+        metrics = {"channels": {"ch1": {"alpha": 1.0}}, "average": {"alpha": 1.0}}
 
-    await bridge.broadcast(metrics)
-
-    expected = json.dumps(metrics)
-    assert ws1.messages == [expected]
-    assert ws2.messages == [expected]
-
-
-@pytest.mark.asyncio
-async def test_websocket_broadcast_loop(bridge: eeg_bridge.EEGBridge) -> None:
-    server = await websockets.serve(bridge._handler, bridge.host, 0)
-    port = server.sockets[0].getsockname()[1]
-
-    async with websockets.connect(f"ws://{bridge.host}:{port}") as client:
-        await asyncio.sleep(0.1)
-        metrics = {"value": 42}
         await bridge.broadcast(metrics)
-        received = await asyncio.wait_for(client.recv(), timeout=1)
-        assert json.loads(received) == metrics
 
-    server.close()
-    await server.wait_closed()
+        expected = json.dumps(metrics)
+        assert ws1.messages == [expected]
+        assert ws2.messages == [expected]
+
+    asyncio.run(main())
+
+
+def test_websocket_broadcast_loop(bridge: eeg_bridge.EEGBridge) -> None:
+    async def main() -> None:
+        bridge.loop = asyncio.get_running_loop()
+        server = await websockets.serve(bridge._handler, bridge.host, 0)
+        port = server.sockets[0].getsockname()[1]
+
+        async with websockets.connect(f"ws://{bridge.host}:{port}") as client:
+            await asyncio.sleep(0.1)
+            metrics = {"value": 42}
+            await bridge.broadcast(metrics)
+            received = await asyncio.wait_for(client.recv(), timeout=1)
+            assert json.loads(received) == metrics
+
+        server.close()
+        await server.wait_closed()
+
+    asyncio.run(main())
 
 
 def test_compute_bandpower_returns_average(bridge: eeg_bridge.EEGBridge) -> None:
@@ -75,7 +84,12 @@ def test_compute_bandpower_returns_average(bridge: eeg_bridge.EEGBridge) -> None
 
 
 def test_log_metrics_writes_file(tmp_path, bridge: eeg_bridge.EEGBridge) -> None:
-    file = tmp_path / "metrics.jsonl"
+    file = tmp_path / "nested" / "metrics.jsonl"
     bridge.output_file = str(file)
-    bridge.log_metrics({"foo": 1})
-    assert json.loads(file.read_text().strip()) == {"foo": 1}
+    metrics = {"foo": 1}
+    bridge.log_metrics(metrics)
+    bridge.log_metrics({"bar": 2})
+
+    lines = file.read_text().splitlines()
+    assert [json.loads(line) for line in lines] == [metrics, {"bar": 2}]
+    assert metrics == {"foo": 1}
