@@ -1,6 +1,7 @@
 import asyncio
 import json
 import threading
+from pathlib import Path
 
 import numpy as np
 from scipy.signal import welch
@@ -90,10 +91,24 @@ class EEGBridge:
         self.log_metrics(metrics)
 
     def log_metrics(self, metrics: dict) -> None:
+        """Append metrics as JSON to the configured output file.
+
+        The method is intentionally tolerant: if no output file is configured
+        nothing happens.  When a path is provided, parent directories are
+        created as needed and the metrics are appended as a single JSON line
+        so downstream tools can treat the file as JSONL.
+        """
+
         if not self.output_file:
             return
-        with open(self.output_file, "a", encoding="utf-8") as f:
-            f.write(json.dumps(metrics) + "\n")
+
+        path = Path(self.output_file)
+        if not path.parent.exists():
+            path.parent.mkdir(parents=True, exist_ok=True)
+
+        record = json.dumps(metrics, separators=(",", ":"))
+        with path.open("a", encoding="utf-8") as handle:
+            handle.write(record + "\n")
 
 
 if __name__ == "__main__":
