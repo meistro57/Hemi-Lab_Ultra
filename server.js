@@ -1,14 +1,16 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const crypto = require("crypto");
+const bcrypt = require("bcrypt");
 const WebSocket = require("ws");
+const rateLimit = require("express-rate-limit");
 
 const port = process.env.PORT || 3000;
 const root = path.join(__dirname);
 const USERS_FILE = process.env.USERS_FILE || path.join(__dirname, "users.json");
 const SESSIONS_FILE =
   process.env.SESSIONS_FILE || path.join(__dirname, "sessions.json");
+const SALT_ROUNDS = 12;
 
 const mimeTypes = {
   ".html": "text/html",
@@ -44,8 +46,78 @@ function saveUsers(users) {
   fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
 }
 
-function hashPassword(pw) {
-  return crypto.createHash("sha256").update(pw).digest("hex");
+async function hashPassword(pw) {
+  return bcrypt.hash(pw, SALT_ROUNDS);
+}
+
+async function verifyPassword(pw, hash) {
+  return bcrypt.compare(pw, hash);
+}
+
+// Rate limiter for authentication endpoints
+const authLimiter = new Map();
+const AUTH_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const MAX_AUTH_ATTEMPTS = 5;
+
+function checkRateLimit(ip, endpoint) {
+  const key = `${ip}:${endpoint}`;
+  const now = Date.now();
+
+  if (!authLimiter.has(key)) {
+    authLimiter.set(key, { count: 1, resetTime: now + AUTH_WINDOW_MS });
+    return true;
+  }
+
+  const limit = authLimiter.get(key);
+  if (now > limit.resetTime) {
+    authLimiter.set(key, { count: 1, resetTime: now + AUTH_WINDOW_MS });
+    return true;
+  }
+
+  if (limit.count >= MAX_AUTH_ATTEMPTS) {
+    return false;
+  }
+
+  limit.count++;
+  return true;
+}
+
+// Session token management
+const sessions = new Map(); // token -> username
+const SESSION_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
+
+function generateToken() {
+  const crypto = require("crypto");
+  return crypto.randomBytes(32).toString("hex");
+}
+
+function validateToken(token) {
+  const session = sessions.get(token);
+  if (!session) return null;
+
+  if (Date.now() > session.expiresAt) {
+    sessions.delete(token);
+    return null;
+  }
+
+  return session.username;
+}
+
+function createSession(username) {
+  const token = generateToken();
+  sessions.set(token, {
+    username,
+    expiresAt: Date.now() + SESSION_EXPIRY
+  });
+  return token;
+}
+
+function getAuthToken(req) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return null;
+  }
+  return authHeader.substring(7);
 }
 
 const server = http.createServer((req, res) => {
@@ -75,65 +147,148 @@ const server = http.createServer((req, res) => {
   }
 
   if (req.method === "POST" && req.url === "/api/register") {
+    const ip = req.socket.remoteAddress;
+    if (!checkRateLimit(ip, "register")) {
+      res.writeHead(429, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Too many registration attempts. Try again later." }));
+      return;
+    }
+
     let body = "";
     req.on("data", (c) => (body += c));
-    req.on("end", () => {
-      const { username, password } = JSON.parse(body || "{}");
-      if (!username || !password) {
-        res.writeHead(400);
-        res.end("invalid");
-        return;
+    req.on("end", async () => {
+      try {
+        const { username, password } = JSON.parse(body || "{}");
+        if (!username || !password) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Username and password required" }));
+          return;
+        }
+
+        if (password.length < 8) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Password must be at least 8 characters" }));
+          return;
+        }
+
+        const users = loadUsers();
+        if (users[username]) {
+          res.writeHead(409, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Username already exists" }));
+          return;
+        }
+
+        const hashedPassword = await hashPassword(password);
+        users[username] = { password: hashedPassword };
+        saveUsers(users);
+
+        const token = createSession(username);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: true, token }));
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Server error" }));
       }
-      const users = loadUsers();
-      if (users[username]) {
-        res.writeHead(409);
-        res.end("exists");
-        return;
-      }
-      users[username] = { password: hashPassword(password) };
-      saveUsers(users);
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ success: true }));
     });
     return;
   }
 
   if (req.method === "POST" && req.url === "/api/login") {
+    const ip = req.socket.remoteAddress;
+    if (!checkRateLimit(ip, "login")) {
+      res.writeHead(429, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Too many login attempts. Try again later." }));
+      return;
+    }
+
     let body = "";
     req.on("data", (c) => (body += c));
-    req.on("end", () => {
-      const { username, password } = JSON.parse(body || "{}");
-      const users = loadUsers();
-      const user = users[username];
-      const ok = user && user.password === hashPassword(password);
-      res.writeHead(ok ? 200 : 401, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ success: !!ok }));
+    req.on("end", async () => {
+      try {
+        const { username, password } = JSON.parse(body || "{}");
+        if (!username || !password) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Username and password required" }));
+          return;
+        }
+
+        const users = loadUsers();
+        const user = users[username];
+
+        if (!user) {
+          res.writeHead(401, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Invalid credentials" }));
+          return;
+        }
+
+        const ok = await verifyPassword(password, user.password);
+
+        if (ok) {
+          const token = createSession(username);
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ success: true, token }));
+        } else {
+          res.writeHead(401, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Invalid credentials" }));
+        }
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Server error" }));
+      }
     });
     return;
   }
 
   if (req.method === "POST" && req.url === "/api/sessions") {
+    const token = getAuthToken(req);
+    const username = validateToken(token);
+
+    if (!username) {
+      res.writeHead(401, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Unauthorized" }));
+      return;
+    }
+
     let body = "";
     req.on("data", (c) => (body += c));
     req.on("end", () => {
-      const session = JSON.parse(body || "{}");
-      const sessions = loadSessions();
-      session.timestamp = Date.now();
-      sessions.push(session);
-      saveSessions(sessions);
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ success: true }));
+      try {
+        const session = JSON.parse(body || "{}");
+        const sessions = loadSessions();
+        session.timestamp = Date.now();
+        session.user = username; // Associate session with authenticated user
+        sessions.push(session);
+        saveSessions(sessions);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: true }));
+      } catch (err) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Invalid request" }));
+      }
     });
     return;
   }
 
   if (req.method === "GET" && req.url.startsWith("/api/sessions")) {
-    const sessions = loadSessions();
-    const urlObj = new URL(req.url, `http://${req.headers.host}`);
-    const user = urlObj.searchParams.get("user");
-    const data = user ? sessions.filter((s) => s.user === user) : sessions;
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(data));
+    const token = getAuthToken(req);
+    const username = validateToken(token);
+
+    if (!username) {
+      res.writeHead(401, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Unauthorized" }));
+      return;
+    }
+
+    try {
+      const sessions = loadSessions();
+      // Users can only see their own sessions
+      const data = sessions.filter((s) => s.user === username);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(data));
+    } catch (err) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Server error" }));
+    }
     return;
   }
   const filePath = req.url === "/" ? "/index.html" : req.url;

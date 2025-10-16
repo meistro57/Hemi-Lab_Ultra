@@ -103,4 +103,65 @@ describe('BinauralEngine', () => {
     expect(engine.filter.type).toBe('lowpass');
     expect(engine.filter.frequency.value).toBeCloseTo(200);
   });
+
+  test('throws error for invalid base frequency', () => {
+    const engine = new BinauralEngine();
+    expect(() => engine.start(-10, 4)).toThrow('Invalid base frequency');
+    expect(() => engine.start(25000, 4)).toThrow('Invalid base frequency');
+    expect(() => engine.start('invalid', 4)).toThrow('Invalid base frequency');
+  });
+
+  test('throws error for invalid beat frequency', () => {
+    const engine = new BinauralEngine();
+    expect(() => engine.start(100, -5)).toThrow('Invalid beat frequency');
+    expect(() => engine.start(100, 150)).toThrow('Invalid beat frequency');
+    expect(() => engine.start(100, 'invalid')).toThrow('Invalid beat frequency');
+  });
+
+  test('throws error for invalid volume', () => {
+    const engine = new BinauralEngine();
+    expect(() => engine.start(100, 4, -0.5)).toThrow('Invalid volume');
+    expect(() => engine.start(100, 4, 2)).toThrow('Invalid volume');
+    expect(() => engine.setVolume(-1)).toThrow('Invalid volume');
+    expect(() => engine.setVolume(1.5)).toThrow('Invalid volume');
+  });
+
+  test('throws error for invalid wave type', () => {
+    const engine = new BinauralEngine();
+    expect(() => engine.start(100, 4, 0.5, 'invalid')).toThrow('Invalid wave type');
+    expect(() => engine.setWaveType('cosine')).toThrow('Invalid wave type');
+  });
+
+  test('throws error when updating without starting', () => {
+    const engine = new BinauralEngine();
+    expect(() => engine.update(110, 5)).toThrow('BinauralEngine is not running');
+  });
+
+  test('throws error for invalid isochronic parameters', () => {
+    const engine = new BinauralEngine();
+    engine.start(100, 4);
+    expect(() => engine.startIsochronic(-5)).toThrow('Invalid isochronic rate');
+    expect(() => engine.startIsochronic(150)).toThrow('Invalid isochronic rate');
+    expect(() => engine.startIsochronic(10, -0.5)).toThrow('Invalid isochronic depth');
+    expect(() => engine.startIsochronic(10, 2)).toThrow('Invalid isochronic depth');
+    engine.stop();
+  });
+
+  test('isRunning flag is set correctly', () => {
+    const engine = new BinauralEngine();
+    expect(engine.isRunning).toBe(false);
+    engine.start(100, 4);
+    expect(engine.isRunning).toBe(true);
+    engine.stop();
+    expect(engine.isRunning).toBe(false);
+  });
+
+  test('update validates parameters when running', () => {
+    const engine = new BinauralEngine();
+    engine.start(100, 4);
+    expect(() => engine.update(-10, 5)).toThrow('Invalid base frequency');
+    expect(() => engine.update(100, -5)).toThrow('Invalid beat frequency');
+    expect(() => engine.update(25000, 5)).toThrow('Invalid base frequency');
+    engine.stop();
+  });
 });

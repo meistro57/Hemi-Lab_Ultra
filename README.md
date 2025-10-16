@@ -36,7 +36,7 @@ It broadcasts real‑time band power metrics over a WebSocket server.
 3. Listen on `ws://localhost:3000` for JSON data (adjust `ws_port` in the script if needed).
 
 ## Features
-- **Binaural Beat Engine** – custom frequency entrainment with phase shifting
+- **Binaural Beat Engine** – custom frequency entrainment with phase shifting and comprehensive error handling
 - **Focus Level Navigator** – Monroe Institute inspired presets
 - **REBAL Energy Shield** – animated protection visualization
 - **GPU-Accelerated Visuals** – smoother REBAL animation using CSS transforms
@@ -52,7 +52,8 @@ It broadcasts real‑time band power metrics over a WebSocket server.
 - **Contact Mode Triggers** – probabilistic deep-state events
 - **AI Journal Analysis** – automatic insight summaries
 - **Analytics Dashboard** – visual focus statistics
-- **User Accounts & Cloud Sync** – login system and cross-device data
+- **Secure User Accounts** – bcrypt password hashing, token-based authentication, rate limiting
+- **Cloud Sync** – store sessions securely with per-user access control
 - **Group Session Rooms** – synchronized multi-user experiences
 - **Wearable Sensor Support** – heart rate and GSR input for biofeedback
 - **VR/AR Visualization Mode** – immersive environment via WebXR
@@ -68,21 +69,54 @@ It broadcasts real‑time band power metrics over a WebSocket server.
 
 The deeper states (Focus 15, 21, 23+) can produce profound results. Use quality headphones in a quiet space and document everything.
 
+## API Authentication
+
+When using the backend server, all session endpoints require authentication:
+
+1. **Register** a new account (minimum 8 character password):
+   ```bash
+   curl -X POST http://localhost:3000/api/register \
+     -H "Content-Type: application/json" \
+     -d '{"username":"your_user","password":"your_password"}'
+   ```
+
+2. **Login** to receive a token (valid for 24 hours):
+   ```bash
+   curl -X POST http://localhost:3000/api/login \
+     -H "Content-Type: application/json" \
+     -d '{"username":"your_user","password":"your_password"}'
+   ```
+
+3. **Use the token** in subsequent requests:
+   ```bash
+   curl -X POST http://localhost:3000/api/sessions \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+     -d '{"focus":10,"duration":600}'
+   ```
+
+**Security Features:**
+- bcrypt password hashing with 12 salt rounds
+- Rate limiting: 5 attempts per 15 minutes on auth endpoints
+- Token-based authentication with 24-hour expiry
+- Users can only access their own session data
+
 ## Roadmap
-### Phase 1 – MVP
+### Phase 1 – MVP ✅
 - Core audio engine with binaural and isochronic options
 - Focus presets and basic UI controls
 - REBAL visualization and session timer
 - Local journal storage and statistics
+- Comprehensive error handling and validation
 
-### Phase 2 – Enhanced Features
+### Phase 2 – Enhanced Features ✅
 - Session composer for layering sounds
 - Advanced breath coaching patterns
 - Pattern analysis algorithms and contact mode
-- Data import/export system (implemented)
+- Data import/export system
+- Secure authentication and user accounts
 
-### Phase 3 – Advanced Platform
-- Backend API with user accounts
+### Phase 3 – Advanced Platform 🚧
 - AI journal analysis and group synchronization
 - Analytics dashboard and custom frequency programming
 - Experimental protocols (entropy drift and more)

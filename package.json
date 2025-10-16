@@ -1,8 +1,10 @@
 {
   "name": "hemi-lab-ultra",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "main": "server.js",
   "dependencies": {
+    "bcrypt": "^5.1.1",
+    "express-rate-limit": "^7.1.5",
     "ws": "^8.17.0"
   },
   "devDependencies": {
