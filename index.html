@@ -1352,10 +1352,16 @@
             document.getElementById("volumeValue").textContent = e.target.value;
             if (this.gainNode && this.audioContext) {
               const now = this.audioContext.currentTime;
-              if (this.gainNode.gain.setTargetAtTime) {
-                this.gainNode.gain.setTargetAtTime(e.target.value / 100, now, 0.05);
+              const targetVolume = e.target.value / 100;
+              // Use linear ramp for ultra-smooth volume changes
+              if (this.gainNode.gain.cancelScheduledValues) {
+                this.gainNode.gain.cancelScheduledValues(now);
+              }
+              if (this.gainNode.gain.linearRampToValueAtTime) {
+                this.gainNode.gain.setValueAtTime(this.gainNode.gain.value, now);
+                this.gainNode.gain.linearRampToValueAtTime(targetVolume, now + 0.015);
               } else {
-                this.gainNode.gain.value = e.target.value / 100;
+                this.gainNode.gain.value = targetVolume;
               }
             }
           });
@@ -1958,12 +1964,12 @@
             beatFreq += this.eegAdjust.beatOffset || 0;
             if (this.eegAdjust.volume != null && this.gainNode) {
               const now = this.audioContext.currentTime;
-              if (this.gainNode.gain.setTargetAtTime) {
-                this.gainNode.gain.setTargetAtTime(
-                  this.eegAdjust.volume,
-                  now,
-                  0.05,
-                );
+              if (this.gainNode.gain.cancelScheduledValues) {
+                this.gainNode.gain.cancelScheduledValues(now);
+              }
+              if (this.gainNode.gain.linearRampToValueAtTime) {
+                this.gainNode.gain.setValueAtTime(this.gainNode.gain.value, now);
+                this.gainNode.gain.linearRampToValueAtTime(this.eegAdjust.volume, now + 0.015);
               } else {
                 this.gainNode.gain.value = this.eegAdjust.volume;
               }
