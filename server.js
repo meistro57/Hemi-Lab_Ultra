@@ -125,23 +125,28 @@ const server = http.createServer((req, res) => {
     let body = "";
     req.on("data", (chunk) => (body += chunk));
     req.on("end", () => {
-      const { text } = JSON.parse(body || "{}");
-      const words = (text || "")
-        .toLowerCase()
-        .replace(/[^a-z0-9\s]/g, "")
-        .split(/\s+/)
-        .filter(Boolean);
-      const freq = {};
-      words.forEach((w) => {
-        freq[w] = (freq[w] || 0) + 1;
-      });
-      const top = Object.keys(freq)
-        .sort((a, b) => freq[b] - freq[a])
-        .slice(0, 3);
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(
-        JSON.stringify({ summary: `Top keywords: ${top.join(", ")}` })
-      );
+      try {
+        const { text } = JSON.parse(body || "{}");
+        const words = (text || "")
+          .toLowerCase()
+          .replace(/[^a-z0-9\s]/g, "")
+          .split(/\s+/)
+          .filter(Boolean);
+        const freq = {};
+        words.forEach((w) => {
+          freq[w] = (freq[w] || 0) + 1;
+        });
+        const top = Object.keys(freq)
+          .sort((a, b) => freq[b] - freq[a])
+          .slice(0, 3);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({ summary: `Top keywords: ${top.join(", ")}` })
+        );
+      } catch (err) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Invalid request" }));
+      }
     });
     return;
   }
@@ -215,15 +220,13 @@ const server = http.createServer((req, res) => {
         const users = loadUsers();
         const user = users[username];
 
-        if (!user) {
-          res.writeHead(401, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: "Invalid credentials" }));
-          return;
-        }
+        // Use a dummy hash to prevent timing attacks that could enumerate usernames
+        const dummyHash = "$2b$12$dummyhashtopreventtimingattacksXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+        const hashToCompare = user ? user.password : dummyHash;
 
-        const ok = await verifyPassword(password, user.password);
+        const ok = await verifyPassword(password, hashToCompare);
 
-        if (ok) {
+        if (ok && user) {
           const token = createSession(username);
           res.writeHead(200, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ success: true, token }));
@@ -293,6 +296,15 @@ const server = http.createServer((req, res) => {
   }
   const filePath = req.url === "/" ? "/index.html" : req.url;
   const fullPath = path.join(root, filePath);
+
+  // Prevent path traversal attacks by ensuring the resolved path is within root
+  const resolvedPath = path.resolve(fullPath);
+  const resolvedRoot = path.resolve(root);
+  if (!resolvedPath.startsWith(resolvedRoot)) {
+    res.writeHead(403, { "Content-Type": "text/plain" });
+    res.end("403 Forbidden");
+    return;
+  }
 
   fs.readFile(fullPath, (err, data) => {
     if (err) {

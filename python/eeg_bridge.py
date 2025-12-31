@@ -1,5 +1,6 @@
 import asyncio
 import json
+import signal
 import threading
 from pathlib import Path
 
@@ -42,6 +43,21 @@ class EEGBridge:
         self.loop = asyncio.get_event_loop()
         self.buffer = []
         self.output_file = output_file
+        self.shutdown_flag = False
+
+        # Set up signal handlers for graceful shutdown
+        signal.signal(signal.SIGINT, self._signal_handler)
+        signal.signal(signal.SIGTERM, self._signal_handler)
+
+    def _signal_handler(self, signum, frame):
+        """Handle shutdown signals gracefully."""
+        print(f"\nReceived signal {signum}, shutting down gracefully...")
+        self.shutdown_flag = True
+        if self.board:
+            try:
+                self.board.stop_stream()
+            except Exception as e:
+                print(f"Error stopping board: {e}")
 
     def start(self):
         """Start the board thread and WebSocket server."""
@@ -71,23 +87,38 @@ class EEGBridge:
             self.buffer = self.buffer[-WINDOW_SIZE // 2 :]
 
     def compute_bandpower(self, samples):
-        bp = {}
-        for ch in range(samples.shape[1]):
-            f, psd = welch(samples[:, ch], FS)
-            channel_power = {}
-            for name, (lo, hi) in BANDS.items():
-                idx = np.logical_and(f >= lo, f <= hi)
-                channel_power[name] = float(np.trapz(psd[idx], f[idx]))
-            bp[f"ch{ch+1}"] = channel_power
+        try:
+            if samples.shape[0] == 0 or samples.shape[1] == 0:
+                raise ValueError("Empty samples array")
 
-        avg = {name: float(np.mean([ch[name] for ch in bp.values()])) for name in BANDS}
-        return {"channels": bp, "average": avg}
+            bp = {}
+            for ch in range(samples.shape[1]):
+                f, psd = welch(samples[:, ch], FS)
+                channel_power = {}
+                for name, (lo, hi) in BANDS.items():
+                    idx = np.logical_and(f >= lo, f <= hi)
+                    channel_power[name] = float(np.trapz(psd[idx], f[idx]))
+                bp[f"ch{ch+1}"] = channel_power
+
+            avg = {name: float(np.mean([ch[name] for ch in bp.values()])) for name in BANDS}
+            return {"channels": bp, "average": avg}
+        except Exception as e:
+            print(f"Error computing bandpower: {e}")
+            # Return empty metrics on error
+            return {"channels": {}, "average": {name: 0.0 for name in BANDS}}
 
     async def broadcast(self, metrics):
         if not self.clients:
             return
         message = json.dumps(metrics)
-        await asyncio.gather(*[ws.send(message) for ws in self.clients])
+        # Send to each client individually with error handling
+        for ws in list(self.clients):
+            try:
+                await ws.send(message)
+            except Exception as e:
+                print(f"Error sending to client: {e}")
+                # Remove disconnected clients
+                self.clients.discard(ws)
         self.log_metrics(metrics)
 
     def log_metrics(self, metrics: dict) -> None:
