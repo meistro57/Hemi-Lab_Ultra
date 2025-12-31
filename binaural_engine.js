@@ -7,11 +7,20 @@ class BinauralEngine {
     filterFrequency = 12000,
   ) {
     try {
-      this.context =
-        context ||
-        new (typeof AudioContext !== "undefined"
-          ? AudioContext
-          : require("web-audio-mock-api").AudioContext)();
+      // Create high-quality audio context with optimal settings
+      if (!context && typeof AudioContext !== "undefined") {
+        const ContextConstructor = AudioContext || webkitAudioContext;
+        this.context = new ContextConstructor({
+          latencyHint: 'interactive',
+          sampleRate: 48000, // High-quality sample rate
+        });
+      } else {
+        this.context =
+          context ||
+          new (typeof AudioContext !== "undefined"
+            ? AudioContext
+            : require("web-audio-mock-api").AudioContext)();
+      }
 
       if (!this.context) {
         throw new Error("Failed to create AudioContext");
@@ -23,6 +32,9 @@ class BinauralEngine {
           console.warn("AudioContext resume failed:", err);
         });
       }
+
+      // Smooth transition time constant (shorter = more responsive, but still click-free)
+      this.transitionTime = 0.015; // 15ms for ultra-smooth transitions
 
       this.leftOsc = null;
       this.rightOsc = null;
@@ -122,15 +134,21 @@ class BinauralEngine {
       }
 
       const now = this.context.currentTime;
+
+      // Use exponential ramps for smoother, click-free frequency transitions
       if (baseFreq !== undefined && this.leftOsc) {
         if (this.leftOsc.frequency.cancelScheduledValues) {
           this.leftOsc.frequency.cancelScheduledValues(now);
         }
-        if (this.leftOsc.frequency.setTargetAtTime) {
-          this.leftOsc.frequency.setTargetAtTime(baseFreq, now, 0.1);
+        // Exponential ramp is smoother than setTargetAtTime for frequency changes
+        if (this.leftOsc.frequency.exponentialRampToValueAtTime) {
+          this.leftOsc.frequency.setValueAtTime(this.leftOsc.frequency.value, now);
+          this.leftOsc.frequency.exponentialRampToValueAtTime(baseFreq, now + this.transitionTime);
+        } else if (this.leftOsc.frequency.setTargetAtTime) {
+          this.leftOsc.frequency.setTargetAtTime(baseFreq, now, this.transitionTime);
         }
-        this.leftOsc.frequency.value = baseFreq;
       }
+
       if (this.rightOsc) {
         const base = baseFreq !== undefined ? baseFreq : this.leftOsc.frequency.value;
         if (beatFreq !== undefined) {
@@ -138,10 +156,13 @@ class BinauralEngine {
           if (this.rightOsc.frequency.cancelScheduledValues) {
             this.rightOsc.frequency.cancelScheduledValues(now);
           }
-          if (this.rightOsc.frequency.setTargetAtTime) {
-            this.rightOsc.frequency.setTargetAtTime(freq, now, 0.1);
+          // Exponential ramp for right channel as well
+          if (this.rightOsc.frequency.exponentialRampToValueAtTime) {
+            this.rightOsc.frequency.setValueAtTime(this.rightOsc.frequency.value, now);
+            this.rightOsc.frequency.exponentialRampToValueAtTime(freq, now + this.transitionTime);
+          } else if (this.rightOsc.frequency.setTargetAtTime) {
+            this.rightOsc.frequency.setTargetAtTime(freq, now, this.transitionTime);
           }
-          this.rightOsc.frequency.value = freq;
         }
       }
     } catch (err) {
@@ -159,10 +180,14 @@ class BinauralEngine {
       if (this.gainNode.gain.cancelScheduledValues) {
         this.gainNode.gain.cancelScheduledValues(now);
       }
-      if (this.gainNode.gain.setTargetAtTime) {
-        this.gainNode.gain.setTargetAtTime(vol, now, 0.1);
+
+      // Use linear ramp for volume changes (smoother than setTargetAtTime for gain)
+      if (this.gainNode.gain.linearRampToValueAtTime) {
+        this.gainNode.gain.setValueAtTime(this.gainNode.gain.value, now);
+        this.gainNode.gain.linearRampToValueAtTime(vol, now + this.transitionTime);
+      } else if (this.gainNode.gain.setTargetAtTime) {
+        this.gainNode.gain.setTargetAtTime(vol, now, this.transitionTime);
       }
-      this.gainNode.gain.value = vol;
     } catch (err) {
       throw new Error(`Failed to set volume: ${err.message}`);
     }
@@ -175,37 +200,119 @@ class BinauralEngine {
         throw new Error(`Invalid wave type: ${type}. Must be one of ${validWaveTypes.join(", ")}`);
       }
 
+      // If wave type is the same, no need to change
+      if (this.waveType === type) {
+        return;
+      }
+
       this.waveType = type;
-      if (this.leftOsc) this.leftOsc.type = type;
-      if (this.rightOsc) this.rightOsc.type = type;
+
+      // Smooth wave type transition with brief fade
+      if (this.leftOsc && this.rightOsc && this.isRunning) {
+        const now = this.context.currentTime;
+        const crossfadeTime = 0.05; // 50ms crossfade
+
+        // Fade out current oscillators
+        if (this.gainNode.gain.cancelScheduledValues) {
+          this.gainNode.gain.cancelScheduledValues(now);
+        }
+        const currentGain = this.gainNode.gain.value;
+        this.gainNode.gain.setValueAtTime(currentGain, now);
+        this.gainNode.gain.linearRampToValueAtTime(0, now + crossfadeTime);
+
+        // Change wave type at the crossfade midpoint
+        setTimeout(() => {
+          if (this.leftOsc) this.leftOsc.type = type;
+          if (this.rightOsc) this.rightOsc.type = type;
+        }, crossfadeTime * 500); // Halfway through the fade
+
+        // Fade back in with new wave type
+        this.gainNode.gain.linearRampToValueAtTime(currentGain, now + crossfadeTime * 2);
+      } else {
+        // If not running, just change the type directly
+        if (this.leftOsc) this.leftOsc.type = type;
+        if (this.rightOsc) this.rightOsc.type = type;
+      }
     } catch (err) {
       throw new Error(`Failed to set wave type: ${err.message}`);
     }
   }
 
-  setFilter(type = "lowpass", frequency = 12000) {
+  setFilter(type = "lowpass", frequency = 12000, Q = 1) {
+    const now = this.context.currentTime;
+
     if (type === "none") {
       this.filter.type = "allpass";
     } else {
       this.filter.type = type;
-      if (frequency !== undefined) {
-        this.filter.frequency.value = frequency;
+
+      // Smooth filter frequency transitions to avoid clicks
+      if (frequency !== undefined && frequency > 0) {
+        if (this.filter.frequency.cancelScheduledValues) {
+          this.filter.frequency.cancelScheduledValues(now);
+        }
+        // Use exponential ramp for filter frequency (sounds more natural)
+        if (this.filter.frequency.exponentialRampToValueAtTime) {
+          this.filter.frequency.setValueAtTime(this.filter.frequency.value, now);
+          this.filter.frequency.exponentialRampToValueAtTime(frequency, now + this.transitionTime);
+        } else {
+          this.filter.frequency.value = frequency;
+        }
+      }
+
+      // Smooth Q factor transitions as well
+      if (Q !== undefined && this.filter.Q) {
+        if (this.filter.Q.cancelScheduledValues) {
+          this.filter.Q.cancelScheduledValues(now);
+        }
+        if (this.filter.Q.linearRampToValueAtTime) {
+          this.filter.Q.setValueAtTime(this.filter.Q.value, now);
+          this.filter.Q.linearRampToValueAtTime(Q, now + this.transitionTime);
+        } else {
+          this.filter.Q.value = Q;
+        }
       }
     }
   }
 
   setCompressorSettings(settings = {}) {
+    const now = this.context.currentTime;
+
+    // Smooth compressor parameter transitions
     if (settings.threshold !== undefined) {
-      this.compressor.threshold.value = settings.threshold;
+      if (this.compressor.threshold.linearRampToValueAtTime) {
+        this.compressor.threshold.setValueAtTime(this.compressor.threshold.value, now);
+        this.compressor.threshold.linearRampToValueAtTime(settings.threshold, now + this.transitionTime);
+      } else {
+        this.compressor.threshold.value = settings.threshold;
+      }
     }
+
     if (settings.ratio !== undefined) {
-      this.compressor.ratio.value = settings.ratio;
+      if (this.compressor.ratio.linearRampToValueAtTime) {
+        this.compressor.ratio.setValueAtTime(this.compressor.ratio.value, now);
+        this.compressor.ratio.linearRampToValueAtTime(settings.ratio, now + this.transitionTime);
+      } else {
+        this.compressor.ratio.value = settings.ratio;
+      }
     }
+
     if (settings.attack !== undefined) {
-      this.compressor.attack.value = settings.attack;
+      if (this.compressor.attack.linearRampToValueAtTime) {
+        this.compressor.attack.setValueAtTime(this.compressor.attack.value, now);
+        this.compressor.attack.linearRampToValueAtTime(settings.attack, now + this.transitionTime);
+      } else {
+        this.compressor.attack.value = settings.attack;
+      }
     }
+
     if (settings.release !== undefined) {
-      this.compressor.release.value = settings.release;
+      if (this.compressor.release.linearRampToValueAtTime) {
+        this.compressor.release.setValueAtTime(this.compressor.release.value, now);
+        this.compressor.release.linearRampToValueAtTime(settings.release, now + this.transitionTime);
+      } else {
+        this.compressor.release.value = settings.release;
+      }
     }
   }
   startIsochronic(rate = 10, depth = 1) {
