@@ -1590,9 +1590,6 @@
             .addEventListener("click", () => {
               document.getElementById("analysisOverlay").style.display = "none";
             });
-          document
-            .getElementById("aiAnalyze")
-            .addEventListener("click", () => this.analyzeJournalAI());
 
           // Data import/export
           document
@@ -2563,22 +2560,6 @@
               this.bookmarkSettings(slot);
             });
           });
-        }
-
-        analyzeJournalAI() {
-          const text = document.getElementById("reflection").value;
-          if (!text.trim()) {
-            alert("Please add reflection text first.");
-            return;
-          }
-          fetch("/api/analyze", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text }),
-          })
-            .then((r) => r.json())
-            .then((d) => alert("🤖 " + d.summary))
-            .catch(() => alert("AI analysis unavailable"));
         }
 
         // Advanced features for future phases
