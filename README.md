@@ -2,6 +2,8 @@
 
 # Hemi-Lab Ultra
 
+https://quantummindsunited.com/hemi-lab/
+
 <img width="1415" height="1879" alt="image" src="https://github.com/user-attachments/assets/ff3892dc-5c51-4d87-93bb-03052f9d3632" />
 
 <img width="1605" height="1893" alt="image" src="https://github.com/user-attachments/assets/79f7918e-6aca-41f4-844d-3d711f390009" />
