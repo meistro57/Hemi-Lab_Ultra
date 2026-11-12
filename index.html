@@ -1,2925 +1,1174 @@
-<!-- index.html -->
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>🧠 Hemi-Lab Ultra</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
-    <script src="binaural_engine.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
-      body {
-        background: radial-gradient(
-          circle at 50% 50%,
-          #0a0a2e 0%,
-          #000000 100%
-        );
-        color: #ffffff;
-        font-family: "Courier New", monospace;
-        min-height: 100vh;
-        overflow-x: hidden;
-      }
-      body.light-mode {
-        background: radial-gradient(circle at 50% 50%, #ffffff 0%, #dddddd 100%);
-        color: #000000;
-      }
-
-      body.light-mode .control-panel {
-        background: rgba(0, 0, 0, 0.05);
-        border-color: rgba(0, 0, 0, 0.2);
-      }
-
-      body.light-mode .visualization-area {
-        background: radial-gradient(circle at center, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.2) 100%);
-        border-color: rgba(0, 0, 0, 0.3);
-      }
-
-      .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 20px;
-      }
-
-      .header {
-        text-align: center;
-        margin-bottom: 40px;
-        padding: 20px 0;
-      }
-
-      .version-banner {
-        display: flex;
-        justify-content: flex-end;
-        margin-bottom: 10px;
-      }
-
-      .version-badge {
-        background: rgba(0, 255, 136, 0.1);
-        border: 1px solid rgba(0, 255, 136, 0.4);
-        color: #00ff88;
-        font-size: 0.9rem;
-        padding: 6px 12px;
-        border-radius: 999px;
-        box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
-      }
-
-      .header h1 {
-        font-size: 2.5rem;
-        background: linear-gradient(45deg, #00ff88, #0099ff, #ff0088);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        margin-bottom: 10px;
-        text-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
-      }
-
-      .header p {
-        opacity: 0.8;
-        font-size: 1.1rem;
-        letter-spacing: 2px;
-      }
-
-      .main-interface {
-        display: grid;
-        grid-template-columns: 1fr 400px;
-        gap: 30px;
-        margin-bottom: 40px;
-      }
-
-      .control-panel {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(0, 255, 136, 0.3);
-        border-radius: 15px;
-        padding: 25px;
-        backdrop-filter: blur(10px);
-      }
-
-      .visualization-area {
-        position: relative;
-        overflow: hidden;
-        background: radial-gradient(
-          circle at center,
-          rgba(0, 0, 0, 0.4) 0%,
-          rgba(0, 0, 0, 0.2) 100%
-        );
-        border: 1px solid rgba(0, 153, 255, 0.3);
-        border-radius: 15px;
-        padding: 25px;
-        min-height: 500px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .visualization-area::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background-image:
-          radial-gradient(#00ff88 1px, transparent 1px),
-          radial-gradient(#0099ff 1px, transparent 1px),
-          radial-gradient(#ff0088 1px, transparent 1px);
-        background-size:
-          3px 3px,
-          4px 4px,
-          5px 5px;
-        background-position:
-          0 0,
-          40px 60px,
-          20px 40px;
-        animation: starScroll 60s linear infinite;
-        opacity: 0.25;
-        pointer-events: none;
-      }
-
-      @keyframes starScroll {
-        from {
-          transform: translateY(0);
-        }
-        to {
-          transform: translateY(-1000px);
-        }
-      }
-
-      .focus-selector {
-        margin-bottom: 25px;
-      }
-
-      .focus-selector h3 {
-        color: #00ff88;
-        margin-bottom: 15px;
-        font-size: 1.2rem;
-      }
-
-      .focus-levels {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
-      }
-
-      .focus-btn {
-        background: rgba(0, 255, 136, 0.1);
-        border: 1px solid rgba(0, 255, 136, 0.3);
-        color: #ffffff;
-        padding: 12px 8px;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        font-size: 0.9rem;
-        text-align: center;
-      }
-
-      .focus-btn:hover {
-        background: rgba(0, 255, 136, 0.2);
-        box-shadow: 0 0 15px rgba(0, 255, 136, 0.4);
-      }
-
-      .focus-btn.active {
-        background: rgba(0, 255, 136, 0.3);
-        box-shadow: 0 0 20px rgba(0, 255, 136, 0.6);
-      }
-
-      .audio-controls {
-        margin-bottom: 25px;
-      }
-
-      .audio-controls h3 {
-        color: #0099ff;
-        margin-bottom: 15px;
-        font-size: 1.2rem;
-      }
-
-      .control-group {
-        margin-bottom: 15px;
-      }
-
-      .control-group label {
-        display: block;
-        margin-bottom: 5px;
-        color: #cccccc;
-        font-size: 0.9rem;
-      }
-
-      .slider {
-        width: 100%;
-        height: 6px;
-        border-radius: 3px;
-        background: rgba(255, 255, 255, 0.1);
-        outline: none;
-        -webkit-appearance: none;
-      }
-
-      .slider::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        background: #00ff88;
-        cursor: pointer;
-        box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
-      }
-
-      .mode528 #mode528Slider {
-        display: none;
-      }
-      .mode528:hover #mode528Slider {
-        display: block;
-      }
-
-      .composer-desc {
-        font-size: 0.9rem;
-        opacity: 0.8;
-        margin-bottom: 10px;
-      }
-
-      .help-icon {
-        margin-left: 4px;
-        cursor: help;
-      }
-
-      .help-tooltip {
-        position: fixed;
-        background: rgba(0, 0, 0, 0.85);
-        color: #fff;
-        padding: 5px 8px;
-        border-radius: 4px;
-        font-size: 0.8rem;
-        pointer-events: none;
-        z-index: 2000;
-        display: none;
-      }
-
-      .session-controls {
-        display: flex;
-        gap: 15px;
-        margin-bottom: 25px;
-      }
-
-      .btn {
-        padding: 12px 24px;
-        border: none;
-        border-radius: 8px;
-        font-family: inherit;
-        font-size: 1rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        flex: 1;
-      }
-
-      .btn-primary {
-        background: linear-gradient(45deg, #00ff88, #0099ff);
-        color: #000000;
-        font-weight: bold;
-      }
-
-      .btn-primary:hover {
-        box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
-        transform: translateY(-2px);
-      }
-
-      .btn-secondary {
-        background: rgba(255, 255, 255, 0.1);
-        color: #ffffff;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-      }
-
-      .btn-secondary:hover {
-        background: rgba(255, 255, 255, 0.2);
-      }
-
-      .bookmark-btn.active {
-        background: linear-gradient(45deg, #ff0088, #fff200);
-        color: #000;
-        box-shadow: 0 0 20px rgba(255, 0, 136, 0.6);
-      }
-
-      .rebal-container {
-        position: relative;
-        width: 300px;
-        height: 300px;
-        overflow: visible;
-      }
-
-      .rebal-orb {
-        position: absolute;
-        width: 150%;
-        height: 150%;
-        top: -25%;
-        left: -25%;
-        border-radius: 50%;
-        background: radial-gradient(
-          circle at 30% 30%,
-          rgba(0, 255, 136, 0.7),
-          rgba(0, 153, 255, 0.4),
-          rgba(255, 0, 136, 0.3)
-        );
-        box-shadow:
-          0 0 60px rgba(0, 255, 136, 0.5),
-          inset 0 0 60px rgba(0, 153, 255, 0.3);
-        filter: drop-shadow(0 0 15px rgba(255, 0, 136, 0.4));
-        overflow: hidden;
-        will-change: transform, opacity;
-        transform: translateZ(0);
-        backface-visibility: hidden;
-      }
-
-      .rebal-orb::before {
-        content: "";
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: conic-gradient(
-          transparent,
-          rgba(0, 255, 136, 0.1),
-          transparent
-        );
-      }
-
-      .rebal-orb.animate {
-        animation: rebalPulse 4s ease-in-out infinite;
-      }
-
-      .rebal-orb.animate::before {
-        animation: rebalRotate 8s linear infinite;
-      }
-
-      @keyframes rebalPulse {
-        0%,
-        100% {
-          transform: scale(1);
-          opacity: 0.8;
-        }
-        50% {
-          transform: scale(1.1);
-          opacity: 1;
-        }
-      }
-
-      @keyframes rebalRotate {
-        0% {
-          transform: rotate(0deg);
-        }
-        100% {
-          transform: rotate(360deg);
-        }
-      }
-
-      .breath-coach {
-        position: absolute;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        text-align: center;
-        opacity: 0;
-        transition: opacity 0.5s ease;
-      }
-
-      .breath-coach.active {
-        opacity: 1;
-      }
-
-      .breath-text {
-        font-size: 1.2rem;
-        margin-bottom: 10px;
-        color: #00ff88;
-      }
-
-      .breath-bar {
-        width: 200px;
-        height: 8px;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 4px;
-        overflow: hidden;
-      }
-
-      .breath-progress {
-        width: 0%;
-        height: 100%;
-        background: linear-gradient(90deg, #00ff88, #0099ff);
-        transition: width linear;
-      }
-
-      .equalizer-container {
-        position: absolute;
-        bottom: 10px;
-        left: 50%;
-        transform: translateX(-50%);
-        display: flex;
-        gap: 40px;
-        pointer-events: none;
-      }
-
-      canvas.equalizer {
-        width: 300px;
-        height: 100px;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(0, 255, 136, 0.3);
-        border-radius: 8px;
-      }
-
-      .session-info {
-        margin-bottom: 25px;
-        padding: 15px;
-        background: rgba(0, 0, 0, 0.3);
-        border-radius: 8px;
-        border-left: 4px solid #00ff88;
-      }
-
-      .session-progress {
-        margin-top: 10px;
-      }
-
-      .progress-bar {
-        width: 100%;
-        height: 6px;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 3px;
-        overflow: hidden;
-      }
-
-      .progress-fill {
-        width: 0%;
-        height: 100%;
-        background: linear-gradient(90deg, #0099ff, #ff0088);
-        transition: width 0.3s linear;
-      }
-
-      .journal-section {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 0, 136, 0.3);
-        border-radius: 15px;
-        padding: 25px;
-        margin-top: 30px;
-      }
-
-      .journal-section h3 {
-        color: #ff0088;
-        margin-bottom: 20px;
-        font-size: 1.3rem;
-      }
-
-      .bookmark-section {
-        margin-top: 20px;
-      }
-
-      .bookmark-slots {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-        gap: 8px;
-        margin-top: 10px;
-      }
-
-      .journal-form {
-        display: grid;
-        gap: 15px;
-      }
-
-      .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-      }
-
-      .form-group label {
-        color: #cccccc;
-        font-size: 0.9rem;
-      }
-
-      .form-group input,
-      .form-group select,
-      .form-group textarea {
-        padding: 10px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 6px;
-        background: rgba(0, 0, 0, 0.3);
-        color: #ffffff;
-        font-family: inherit;
-        font-size: 0.9rem;
-      }
-
-      .form-group textarea {
-        resize: vertical;
-        min-height: 100px;
-      }
-
-      .stats-display {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-        gap: 15px;
-        margin-top: 20px;
-      }
-
-      .stat-card {
-        padding: 15px;
-        background: rgba(0, 0, 0, 0.3);
-        border-radius: 8px;
-        text-align: center;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-      }
-
-      .stat-value {
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: #00ff88;
-      }
-
-      .stat-label {
-        font-size: 0.8rem;
-        opacity: 0.7;
-        margin-top: 5px;
-      }
-
-      .status-indicator {
-        display: inline-block;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        margin-right: 8px;
-      }
-
-      .status-offline {
-        background: #666;
-      }
-      .status-active {
-        background: #00ff88;
-        animation: pulse 2s infinite;
-      }
-      .status-contact {
-        background: #ff0088;
-        animation: pulse 1s infinite;
-      }
-
-      @keyframes pulse {
-        0%,
-        100% {
-          opacity: 1;
-        }
-        50% {
-          opacity: 0.5;
-        }
-      }
-
-      .analysis-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.85);
-        display: none;
-        justify-content: center;
-        align-items: center;
-        z-index: 1000;
-        padding: 20px;
-      }
-
-      .analysis-content {
-        background: #111;
-        padding: 20px;
-        border-radius: 8px;
-        max-width: 600px;
-        width: 100%;
-        max-height: 80vh;
-        .composer-section {
-          margin-top: 15px;
-        }
-        .composer-section input {
-          width: 60px;
-          margin-right: 5px;
-        }
-        overflow-y: auto;
-      }
-
-      .github-link {
-        display: inline-block;
-        margin-top: 10px;
-        color: #00ff88;
-        text-decoration: none;
-      }
-
-      .github-link:hover {
-        text-decoration: underline;
-      }
-
-      .theme-switch {
-        margin-top: 10px;
-        display: inline-block;
-      }
-      .instructions {
-        margin-bottom: 20px;
-        text-align: center;
-      }
-
-      .instructions details {
-        display: inline-block;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(0, 255, 136, 0.3);
-        border-radius: 8px;
-        padding: 10px;
-        text-align: left;
-        max-width: 600px;
-      }
-
-      .instructions summary {
-        cursor: pointer;
-        font-weight: bold;
-        color: #00ff88;
-        outline: none;
-      }
-
-      @media (max-width: 768px) {
-        .main-interface {
-          grid-template-columns: 1fr;
-        }
-
-        .header h1 {
-          font-size: 1.8rem;
-        }
-
-        .rebal-container {
-          width: 250px;
-          height: 250px;
-          overflow: visible;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <div class="version-banner">
-        <span class="version-badge" aria-label="Application version">
-          <!-- Default version placeholder; update when releasing new versions -->
-          v1.0.0
-        </span>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hemi-Lab Ultra · Quantum Minds United</title>
+  <meta name="description" content="A binaural beat lab for consciousness exploration: Monroe-inspired focus levels, layered tones, breath coaching and a private session journal." />
+  <meta name="theme-color" content="#120c07" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="binaural_engine.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    :root {
+      --bg: #120c07; --panel: rgba(30,20,11,.78); --panel-2: rgba(0,0,0,.28);
+      --line: rgba(242,169,59,.18); --line-hi: rgba(242,169,59,.45);
+      --honey: #f2a93b; --honey-2: #ffd27a; --ink: #f6e9d2; --muted: #c9b595; --body: #e6d6ba;
+      --violet: #9b7bea; --violet-2: #b9a0f5; --teal: #7dd3c0; --rose: #f59e8b;
+      --on-honey: #1a1008;
+      --hexv: polygon(50% 0%, 97% 25%, 97% 75%, 50% 100%, 3% 75%, 3% 25%);
+      --comb: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='84' height='145.5' viewBox='0 0 84 145.5'><g fill='none' stroke='%23f2a93b' stroke-opacity='0.05' stroke-width='1.2'><polygon points='42,2 80,24 80,68.5 42,90.5 4,68.5 4,24'/><polygon points='0,75 38,97 38,141.5 0,163.5 -38,141.5 -38,97'/><polygon points='84,75 122,97 122,141.5 84,163.5 46,141.5 46,97'/></g></svg>");
+    }
+    body.light {
+      --bg: #fbf4e6; --panel: rgba(255,250,240,.9); --panel-2: rgba(163,82,7,.05);
+      --line: rgba(163,82,7,.2); --line-hi: rgba(163,82,7,.45);
+      --honey: #b45f06; --honey-2: #8a4a05; --ink: #2b2118; --muted: #6b5844; --body: #3b2e22;
+      --violet: #6d4fc4; --violet-2: #5a3fb0; --teal: #1f7a63; --rose: #c2412d; --on-honey: #fffaf0;
+    }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--body); font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden;
+      background-image: radial-gradient(70% 45% at 50% 0%, rgba(155,123,234,.12), transparent 70%), var(--comb); background-attachment: fixed, fixed; }
+    a { color: var(--honey); } a:hover { color: var(--honey-2); }
+    :focus-visible { outline: 2px solid var(--violet-2); outline-offset: 3px; border-radius: 8px; }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    .wrap { width: min(1280px, calc(100% - 28px)); margin: 0 auto; }
+    .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+    /* header */
+    .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 20px 0; }
+    .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--ink); }
+    .brand b { font: 700 20px 'Fraunces', serif; } .brand b span { color: var(--violet-2); }
+    .brand svg { filter: drop-shadow(0 0 10px rgba(242,169,59,.45)); }
+    .top-r { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .pill { display: inline-flex; align-items: center; gap: 7px; min-height: 38px; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line-hi); background: var(--panel-2); color: var(--muted); font: 500 13px 'JetBrains Mono', monospace; text-decoration: none; cursor: pointer; }
+    .pill:hover { color: var(--honey-2); border-color: var(--honey); }
+    .hero { padding: 26px 0 22px; display: grid; grid-template-columns: 1.3fr 1fr; gap: 24px; align-items: end; }
+    .eyebrow { font: 500 12.5px 'JetBrains Mono', monospace; letter-spacing: .16em; text-transform: uppercase; color: var(--violet-2); }
+    .hero h1 { margin: 8px 0 0; color: var(--ink); font: 700 clamp(2.3rem, 5vw, 4rem)/1.02 'Fraunces', serif; letter-spacing: -.015em; }
+    .hero h1 em { font-style: italic; font-weight: 400; color: var(--honey); text-shadow: 0 0 36px rgba(242,169,59,.3); }
+    .hero p { margin: 12px 0 0; max-width: 40rem; font-size: 17.5px; line-height: 1.6; color: var(--muted); }
+    .phones { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 16px; border: 1px solid rgba(155,123,234,.45); background: rgba(155,123,234,.08); font-size: 14.5px; line-height: 1.5; color: var(--body); }
+    .phones svg { flex-shrink: 0; color: var(--violet-2); margin-top: 2px; }
+    .phones b { color: var(--ink); }
+
+    /* layout */
+    .lab { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+    .card { border-radius: 22px; background: var(--panel); border: 1px solid var(--line); backdrop-filter: blur(10px); box-shadow: 0 24px 60px rgba(0,0,0,.28); }
+    body.light .card { box-shadow: 0 18px 44px rgba(120,70,10,.12); }
+    .card-h { display: flex; align-items: center; gap: 12px; margin: 0 0 14px; color: var(--ink); font: 600 21px 'Fraunces', serif; }
+    .card-h i { width: 18px; height: 20px; flex-shrink: 0; clip-path: var(--hexv); background: var(--honey); box-shadow: 0 0 12px var(--honey); }
+    .card-h.v i { background: var(--violet); box-shadow: 0 0 12px var(--violet); }
+    .card-h small { margin-left: auto; font: 12px 'JetBrains Mono', monospace; color: var(--muted); }
+
+    /* chamber (visual) */
+    .chamber { position: sticky; top: 14px; padding: 18px; overflow: hidden; }
+    .stage { position: relative; aspect-ratio: 1 / 1; max-height: 64vh; margin: 0 auto; border-radius: 18px; overflow: hidden; background: radial-gradient(60% 60% at 50% 50%, rgba(242,169,59,.08), transparent 70%), rgba(0,0,0,.35); border: 1px solid var(--line); }
+    body.light .stage { background: radial-gradient(60% 60% at 50% 50%, rgba(242,169,59,.12), transparent 70%), #20160c; }
+    #scope { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .breath { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); text-align: center; opacity: 0; transition: opacity .5s; pointer-events: none; }
+    .breath.on { opacity: 1; }
+    .breath b { display: block; font: 600 20px 'Fraunces', serif; color: #ffd27a; letter-spacing: .02em; text-shadow: 0 0 18px rgba(242,169,59,.6); }
+    .breath .bar { width: 180px; height: 6px; margin: 8px auto 0; border-radius: 3px; background: rgba(255,255,255,.12); overflow: hidden; }
+    .breath .bar span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #f2a93b, #b9a0f5); }
+    .stage-label { position: absolute; left: 14px; top: 12px; font: 11.5px 'JetBrains Mono', monospace; letter-spacing: .12em; text-transform: uppercase; color: rgba(246,233,210,.6); }
+    .stage-state { position: absolute; right: 14px; top: 10px; display: inline-flex; align-items: center; gap: 8px; padding: 4px 10px; border-radius: 999px; font: 500 11.5px 'JetBrains Mono', monospace; color: #f6e9d2; background: rgba(0,0,0,.45); border: 1px solid rgba(242,169,59,.3); }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: #776a5a; }
+    .dot.on { background: #7dd3c0; box-shadow: 0 0 10px #7dd3c0; animation: breathe 2.4s ease-in-out infinite; }
+    @keyframes breathe { 50% { opacity: .45; } }
+
+    .readouts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 14px; }
+    .ro { padding: 10px 12px; border-radius: 14px; background: var(--panel-2); border: 1px solid var(--line); min-width: 0; }
+    .ro small { display: block; font: 10.5px 'JetBrains Mono', monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+    .ro b { display: block; margin-top: 2px; font: 600 20px 'Fraunces', serif; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ro.l b { color: var(--honey); } .ro.r b { color: var(--violet-2); } .ro.beat b { color: var(--teal); }
+    .ro em { font: 11.5px 'JetBrains Mono', monospace; color: var(--muted); font-style: normal; }
+    .session-row { display: flex; align-items: center; gap: 14px; margin-top: 14px; }
+    .timer { font: 600 28px 'JetBrains Mono', monospace; color: var(--ink); letter-spacing: .02em; min-width: 6.4ch; }
+    .prog { flex: 1; height: 8px; border-radius: 4px; background: var(--panel-2); border: 1px solid var(--line); overflow: hidden; }
+    .prog span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--honey), var(--violet-2)); transition: width 1s linear; }
+    .prog-meta { font: 12px 'JetBrains Mono', monospace; color: var(--muted); white-space: nowrap; }
+    .go { display: flex; gap: 10px; margin-top: 14px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 10px 20px; border-radius: 999px; border: 1px solid transparent; font-weight: 600; font-size: 15px; text-decoration: none; cursor: pointer; transition: transform .2s, background .25s, border-color .25s, color .2s, box-shadow .25s; }
+    .btn:hover:not(:disabled) { transform: translateY(-2px); }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-honey { background: var(--honey); color: var(--on-honey); } .btn-honey:hover:not(:disabled) { background: var(--honey-2); box-shadow: 0 10px 26px rgba(242,169,59,.35); }
+    .btn-ghost { background: rgba(155,123,234,.08); border-color: rgba(155,123,234,.55); color: var(--ink); } .btn-ghost:hover:not(:disabled) { background: rgba(155,123,234,.2); }
+    .btn-line { background: transparent; border-color: var(--line-hi); color: var(--body); } .btn-line:hover:not(:disabled) { border-color: var(--honey); color: var(--honey-2); }
+    .btn.big { flex: 1; min-height: 54px; font-size: 16.5px; }
+    .btn.sm { min-height: 36px; padding: 6px 14px; font-size: 13.5px; }
+
+    /* controls */
+    .controls { display: grid; gap: 18px; }
+    .controls > .card { padding: 20px; }
+    .focus-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .focus { position: relative; padding: 12px 10px 11px; min-height: 74px; border-radius: 14px; border: 1px solid var(--line); background: var(--panel-2); text-align: left; cursor: pointer; transition: border-color .2s, background .2s, transform .2s; }
+    .focus:hover { border-color: var(--line-hi); transform: translateY(-2px); }
+    .focus b { display: block; font: 600 17px 'Fraunces', serif; color: var(--ink); }
+    .focus small { display: block; margin-top: 2px; font-size: 12.5px; color: var(--muted); }
+    .focus span { position: absolute; right: 9px; top: 10px; font: 10.5px 'JetBrains Mono', monospace; color: var(--muted); }
+    .focus[aria-pressed="true"] { border-color: var(--honey); background: rgba(242,169,59,.14); box-shadow: inset 0 0 0 1px var(--honey); }
+    .focus[aria-pressed="true"] span { color: var(--honey-2); }
+    .focus-desc { margin: 12px 0 0; font-size: 14.5px; line-height: 1.55; color: var(--muted); min-height: 2.6em; }
+    .focus-desc b { color: var(--ink); font-weight: 600; }
+
+    .ctl { display: grid; gap: 6px; margin-top: 14px; }
+    .ctl-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font-size: 14px; color: var(--body); }
+    .ctl-top output { font: 500 13px 'JetBrains Mono', monospace; color: var(--honey-2); white-space: nowrap; }
+    .hint { font-size: 12.5px; color: var(--muted); line-height: 1.45; }
+    input[type=range] { width: 100%; height: 26px; accent-color: var(--honey); background: transparent; cursor: pointer; }
+    input[type=range]:disabled { opacity: .4; cursor: not-allowed; }
+    select, input[type=text], input[type=number], textarea { width: 100%; min-height: 42px; padding: 9px 12px; border-radius: 12px; border: 1px solid var(--line-hi); background: rgba(0,0,0,.28); color: var(--ink); }
+    body.light select, body.light input[type=text], body.light input[type=number], body.light textarea { background: #fffaf2; }
+    select option { background: #1b120a; color: #f6e9d2; }
+    body.light select option { background: #fffaf2; color: #2b2118; }
+    textarea { resize: vertical; min-height: 110px; line-height: 1.5; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip { min-height: 32px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--line-hi); background: transparent; color: var(--muted); font: 12.5px 'JetBrains Mono', monospace; cursor: pointer; }
+    .chip:hover { color: var(--honey-2); border-color: var(--honey); }
+    .chip[aria-pressed="true"] { background: var(--honey); color: var(--on-honey); border-color: var(--honey); }
+
+    /* toggles */
+    .toggles { display: grid; gap: 8px; }
+    .tg { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; align-items: center; padding: 11px 13px; border-radius: 14px; border: 1px solid var(--line); background: var(--panel-2); cursor: pointer; }
+    .tg:hover { border-color: var(--line-hi); }
+    .tg input { grid-row: span 2; appearance: none; -webkit-appearance: none; width: 42px; height: 24px; margin: 0; border-radius: 999px; background: rgba(255,255,255,.12); border: 1px solid var(--line-hi); position: relative; cursor: pointer; transition: background .2s; }
+    body.light .tg input { background: rgba(0,0,0,.08); }
+    .tg input::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--muted); transition: transform .2s, background .2s; }
+    .tg input:checked { background: var(--honey); border-color: var(--honey); }
+    .tg input:checked::after { transform: translateX(18px); background: var(--on-honey); }
+    .tg b { font-weight: 600; font-size: 14.5px; color: var(--ink); }
+    .tg small { font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+    .sub { display: none; padding: 4px 4px 2px 58px; }
+    .sub.on { display: block; }
+    .sub .ctl { margin-top: 6px; }
+
+    details.more { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 12px; }
+    details.more > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; color: var(--ink); font: 600 16px 'Fraunces', serif; min-height: 36px; }
+    details.more > summary::-webkit-details-marker { display: none; }
+    details.more > summary::after { content: '+'; margin-left: auto; font: 500 18px 'JetBrains Mono', monospace; color: var(--honey); }
+    details.more[open] > summary::after { content: '−'; }
+    details.more > summary small { font: 400 12.5px 'Inter', sans-serif; color: var(--muted); }
+
+    .layer { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; align-items: end; margin-top: 8px; }
+    .layer label { font: 10.5px 'JetBrains Mono', monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); display: grid; gap: 4px; }
+    .x { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; border: 1px solid var(--line-hi); background: transparent; color: var(--muted); cursor: pointer; }
+    .x:hover { background: var(--rose); border-color: var(--rose); color: #1a1008; }
+    .prog-status { margin-top: 8px; font: 12.5px 'JetBrains Mono', monospace; color: var(--teal); min-height: 1.4em; }
+    .net { display: inline-flex; align-items: center; gap: 6px; font: 12px 'JetBrains Mono', monospace; color: var(--muted); }
+    .net .dot.ok { background: #7dd3c0; } .net .dot.err { background: #f07a62; } .net .dot.wait { background: #f2a93b; animation: breathe 1s infinite; }
+
+    /* bookmarks */
+    .slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .slot { display: grid; gap: 6px; padding: 10px; border-radius: 14px; border: 1px dashed var(--line-hi); background: transparent; min-height: 86px; }
+    .slot.full { border-style: solid; border-color: var(--line-hi); background: var(--panel-2); }
+    .slot b { font: 600 14.5px 'Fraunces', serif; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .slot small { font: 11px 'JetBrains Mono', monospace; color: var(--muted); }
+    .slot .acts { display: flex; gap: 6px; margin-top: auto; }
+    .slot .acts button { flex: 1; min-height: 30px; padding: 2px 8px; border-radius: 9px; border: 1px solid var(--line-hi); background: transparent; color: var(--body); font-size: 12.5px; cursor: pointer; }
+    .slot .acts button:hover { background: var(--honey); border-color: var(--honey); color: var(--on-honey); }
+    .slot .acts button.del { flex: 0 0 30px; }
+    .slot .acts button.del:hover { background: var(--rose); border-color: var(--rose); }
+
+    /* journal */
+    .journal { margin-top: 22px; padding: 22px; }
+    .jgrid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 22px; }
+    .moods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .moods label, .jfield { display: grid; gap: 6px; font-size: 14px; color: var(--body); }
+    .check { display: flex; align-items: flex-start; gap: 10px; margin-top: 12px; font-size: 14px; color: var(--body); cursor: pointer; }
+    .check input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--violet); }
+    .jbtns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .ai-out { margin-top: 10px; padding: 10px 12px; border-radius: 12px; border-left: 3px solid var(--violet); background: rgba(155,123,234,.08); font-size: 14px; color: var(--body); }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(82px, 1fr)); gap: 8px; }
+    .stat small { display: block; line-height: 1.25; }
+    .stat { padding: 14px; border-radius: 14px; background: var(--panel-2); border: 1px solid var(--line); text-align: center; }
+    .stat b { display: block; font: 600 26px 'Fraunces', serif; color: var(--honey); }
+    .stat small { font-size: 12.5px; color: var(--muted); }
+    .entries { display: grid; gap: 8px; margin-top: 14px; max-height: 360px; overflow: auto; padding-right: 4px; }
+    .entry { padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--panel-2); }
+    .entry header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font: 12px 'JetBrains Mono', monospace; color: var(--muted); }
+    .entry header b { color: var(--honey-2); font-weight: 500; }
+    .entry header .tag { padding: 1px 8px; border-radius: 999px; border: 1px solid rgba(155,123,234,.5); color: var(--violet-2); }
+    .entry header button { margin-left: auto; border: 0; background: none; color: var(--muted); cursor: pointer; padding: 4px; }
+    .entry header button:hover { color: var(--rose); }
+    .entry p { margin: 6px 0 0; font-size: 14px; line-height: 1.55; color: var(--body); white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+    .empty { padding: 20px; text-align: center; color: var(--muted); border: 1px dashed var(--line-hi); border-radius: 14px; font-size: 14px; }
+
+    /* guide + dialogs */
+    .guide { margin: 22px 0 0; padding: 18px 22px; }
+    .guide summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 12px; color: var(--ink); font: 600 19px 'Fraunces', serif; }
+    .guide summary::-webkit-details-marker { display: none; }
+    .guide summary::after { content: '+'; margin-left: auto; font: 500 20px 'JetBrains Mono', monospace; color: var(--honey); }
+    .guide[open] summary::after { content: '−'; }
+    .guide-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin-top: 14px; }
+    .guide h4 { margin: 0 0 6px; color: var(--honey-2); font: 600 15px 'Inter', sans-serif; }
+    .guide ul { margin: 0; padding-left: 18px; line-height: 1.6; font-size: 14.5px; }
+    .guide p { margin: 0; font-size: 14.5px; line-height: 1.6; }
+    .warn { border-left: 3px solid var(--rose); padding-left: 12px; }
+    dialog { width: min(760px, 94vw); max-height: 88vh; padding: 0; border: 1px solid var(--line-hi); border-radius: 22px; background: var(--bg); color: var(--body); box-shadow: 0 40px 120px rgba(0,0,0,.6); }
+    dialog::backdrop { background: rgba(8,5,2,.78); backdrop-filter: blur(6px); }
+    .dlg-h { position: sticky; top: 0; display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--line); background: var(--bg); color: var(--ink); font: 600 21px 'Fraunces', serif; z-index: 1; }
+    .dlg-h button { margin-left: auto; }
+    .dlg-b { padding: 18px 20px 22px; }
+    .dlg-b h4 { margin: 18px 0 8px; color: var(--honey-2); font: 600 15px 'Inter', sans-serif; }
+    .dlg-b h4:first-child { margin-top: 0; }
+    .bars { display: grid; gap: 6px; }
+    .bar-row { display: grid; grid-template-columns: 90px 1fr 46px; gap: 10px; align-items: center; font: 12.5px 'JetBrains Mono', monospace; color: var(--muted); }
+    .bar-row .b { height: 14px; border-radius: 7px; background: var(--panel-2); overflow: hidden; }
+    .bar-row .b span { display: block; height: 100%; border-radius: 7px; background: linear-gradient(90deg, var(--honey), var(--violet-2)); }
+    .bar-row .b.neg span { background: linear-gradient(90deg, var(--rose), var(--rose)); }
+    .bar-row em { font-style: normal; color: var(--ink); text-align: right; }
+
+    .toast { position: fixed; left: 50%; top: 20px; z-index: 3000; transform: translate(-50%, calc(-100% - 60px)); max-width: min(560px, 92vw); padding: 12px 20px; border-radius: 999px; background: rgba(18,12,7,.96); border: 1px solid #f2a93b; color: #ffd27a; font: 500 13.5px 'JetBrains Mono', monospace; text-align: center; transition: transform .35s cubic-bezier(.2,.8,.2,1); }
+    .toast.show { transform: translate(-50%, 0); box-shadow: 0 0 24px rgba(242,169,59,.3); }
+    footer { margin-top: 40px; padding: 22px 0 30px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; font-size: 14px; color: var(--muted); }
+    footer a { color: var(--muted); }
+    kbd { padding: 1px 6px; border-radius: 5px; border: 1px solid var(--line-hi); background: var(--panel-2); color: var(--ink); font: 12px 'JetBrains Mono', monospace; }
+
+    @media (max-width: 980px) {
+      .hero { grid-template-columns: 1fr; }
+      .lab { grid-template-columns: 1fr; }
+      .chamber { position: relative; top: 0; }
+      .stage { max-height: none; width: min(100%, 520px); }
+      .jgrid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 560px) {
+      .readouts { grid-template-columns: repeat(2, 1fr); }
+      .focus-grid { grid-template-columns: repeat(2, 1fr); }
+      .slots { grid-template-columns: repeat(2, 1fr); }
+      .moods { grid-template-columns: 1fr 1fr; }
+      .moods label:first-child { grid-column: 1 / -1; }
+      .layer { grid-template-columns: 1fr 1fr 1fr; }
+      .layer .x { grid-column: 1 / -1; width: 100%; }
+      .row2 { grid-template-columns: 1fr; }
+      .sub { padding-left: 4px; }
+      .top .pill span { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <a class="brand" href="/" aria-label="Back to Quantum Minds United">
+        <svg width="32" height="32" viewBox="0 0 36 36" aria-hidden="true"><polygon points="18,2 32,10 32,26 18,34 4,26 4,10" fill="none" stroke="#f2a93b" stroke-width="2"/><polygon points="18,10 25,14 25,22 18,26 11,22 11,14" fill="#f2a93b"/><circle cx="18" cy="18" r="2.6" fill="#9b7bea"/></svg>
+        <b>Hemi-Lab <span>Ultra</span></b>
+      </a>
+      <div class="top-r">
+        <span class="pill" title="Version">v1.2.0</span>
+        <a class="pill" href="https://github.com/meistro57/Hemi-Lab_Ultra" target="_blank" rel="noopener noreferrer"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg><span>GitHub</span></a>
+        <button type="button" class="pill" id="themeBtn" aria-pressed="false"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span id="themeLabel">Beeswax</span></button>
       </div>
-      <header class="header">
-        <h1>🧠 Hemi-Lab Ultra</h1>
-        <p>Consciousness Exploration • Science • Spirit • Precision</p>
-        <a
-          href="https://github.com/meistro57/Hemi-Lab_Ultra"
-          target="_blank"
-          class="github-link"
-          >View on GitHub</a
-        <label class="theme-switch">
-          <input type="checkbox" id="themeToggle" /> Light Mode
-        </label>
-      </header>
+    </header>
 
-      <div class="instructions">
-        <details>
-          <summary>📜 Instructions</summary>
-          <p>🧠 Welcome to Hemi-Lab Gateway Terminal</p>
-          <p>
-            Your consciousness exploration platform is ready. Features
-            available:
-          </p>
-          <ul>
-            <li>Binaural Beat Engine - Create custom frequency entrainment</li>
-            <li>Focus Level Navigator - Monroe Institute inspired states</li>
-            <li>REBAL Energy Shield - Resonant protection visualization</li>
-            <li>Breath Coach - Synchronized breathing guidance</li>
-            <li>Session Journal - Track your journey and insights</li>
-            <li>Pattern Analysis - Discover your optimal practice times</li>
-            <li>Affirmation Layer - Spoken positive cues</li>
-          </ul>
-          <p>
-            🚀 Select a Focus Level and click "Begin Session" to start your
-            exploration.
-          </p>
-          <p>For best results:</p>
-          <ul>
-            <li>Use quality headphones</li>
-            <li>Find a quiet, comfortable space</li>
-            <li>Set an intention before beginning</li>
-            <li>Journal your experiences after each session</li>
-          </ul>
-          <p>
-            The deeper states (Focus 15, 21, 23+) may produce profound
-            experiences. Trust the process and document everything.
-          </p>
-        </details>
+    <section class="hero">
+      <div>
+        <span class="eyebrow">Quantum Minds United · consciousness lab</span>
+        <h1>Two tones in.<br><em>One beat within.</em></h1>
+        <p>Each ear gets a slightly different tone, and your brain hears the difference as a slow pulse. Pick a Focus level, settle in, and journal what you find on the other side.</p>
       </div>
-
-      <div class="main-interface">
-        <div class="visualization-area">
-          <div class="rebal-container">
-            <div class="rebal-orb" id="rebalOrb"></div>
-          </div>
-          <div class="breath-coach" id="breathCoach">
-            <div class="breath-text" id="breathText">Breathe In</div>
-          <div class="breath-bar">
-            <div class="breath-progress" id="breathProgress"></div>
-          </div>
-          <div class="equalizer-container">
-            <canvas id="leftEQ" class="equalizer" width="300" height="100"></canvas>
-            <canvas id="rightEQ" class="equalizer" width="300" height="100"></canvas>
-          </div>
-        </div>
+      <div class="phones" role="note">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1v-6h3zM3 19a2 2 0 0 0 2 2h1v-6H3z"/></svg>
+        <div><b>Headphones on.</b> Binaural beats only happen when each ear hears its own tone, so speakers won't work. Start quiet, and never listen while driving.</div>
       </div>
+    </section>
 
-      <div class="control-panel">
-          <div class="focus-selector">
-            <h3>🌌 Focus Level Navigator</h3>
-            <div class="focus-levels">
-              <button class="focus-btn" data-focus="10">
-                Focus 10<br /><small>Body Asleep</small>
-              </button>
-              <button class="focus-btn" data-focus="12">
-                Focus 12<br /><small>Expanded</small>
-              </button>
-              <button class="focus-btn" data-focus="15">
-                Focus 15<br /><small>No-Time</small>
-              </button>
-              <button class="focus-btn" data-focus="21">
-                Focus 21<br /><small>Threshold</small>
-              </button>
-              <button class="focus-btn" data-focus="23">
-                Focus 23+<br /><small>Contact</small>
-              </button>
-              <button class="focus-btn" data-focus="custom">
-                Custom<br /><small>Compose</small>
-              </button>
-            </div>
-            <div class="control-group" style="margin-top: 10px">
-              <label>Focus Slider: <span id="focusSliderValue">10</span></label>
-              <input
-                type="range"
-                class="slider"
-                id="focusSlider"
-                min="10"
-                max="23"
-                value="10"
-              />
-            </div>
-          </div>
-
-          <div class="audio-controls">
-            <h3>🔊 Audio Engine</h3>
-            <div class="control-group">
-              <label
-                >Base Frequency (Hz): <span id="baseFreqValue">100</span></label
-              >
-                <input
-                  type="range"
-                  class="slider"
-                  id="baseFreq"
-                  min="40"
-                  max="1000"
-                  value="100"
-                />
-            </div>
-            <div class="control-group">
-              <label
-                >Beat Frequency (Hz): <span id="beatFreqValue">8</span></label
-              >
-              <input
-                type="range"
-                class="slider"
-                id="beatFreq"
-                min="0.5"
-                max="40"
-                value="8"
-                step="0.5"
-              />
-            </div>
-            <div class="control-group">
-              <label>
-                Waveform:
-                <select id="waveType">
-                  <option value="sine">Sine</option>
-                  <option value="square">Square</option>
-                  <option value="sawtooth">Sawtooth</option>
-                  <option value="triangle">Triangle</option>
-                </select>
-              </label>
-            </div>
-            <div class="control-group">
-              <label>Volume: <span id="volumeValue">50</span>%</label>
-              <input
-                type="range"
-                class="slider"
-                id="volume"
-                min="0"
-                max="100"
-                value="50"
-              />
-            </div>
-            <div class="control-group">
-              <label>
-                Compressor Threshold (dB):
-                <span id="compThresholdValue">-24</span>
-              </label>
-              <input
-                type="range"
-                class="slider"
-                id="compThreshold"
-                min="-100"
-                max="0"
-                value="-24"
-              />
-            </div>
-            <div class="control-group">
-              <label>
-                Compressor Ratio: <span id="compRatioValue">12</span>
-              </label>
-              <input
-                type="range"
-                class="slider"
-                id="compRatio"
-                min="1"
-                max="20"
-                value="12"
-              />
-            </div>
-            <div class="control-group">
-              <label>
-                Attack (s): <span id="compAttackValue">0.003</span>
-              </label>
-              <input
-                type="range"
-                class="slider"
-                id="compAttack"
-                min="0"
-                max="1"
-                step="0.001"
-                value="0.003"
-              />
-            </div>
-            <div class="control-group">
-              <label>
-                Release (s): <span id="compReleaseValue">0.25</span>
-              </label>
-              <input
-                type="range"
-                class="slider"
-                id="compRelease"
-                min="0"
-                max="1"
-                step="0.01"
-                value="0.25"
-              />
-            </div>
-            <div class="control-group">
-              <label>Filter Type:</label>
-              <select id="filterType">
-                <option value="none">None</option>
-                <option value="lowpass" selected>Low-pass</option>
-                <option value="highpass">High-pass</option>
-                <option value="bandpass">Band-pass</option>
-              </select>
-            </div>
-            <div class="control-group">
-              <label>
-                Cutoff Frequency (Hz): <span id="filterFreqValue">12000</span>
-              </label>
-              <input
-                type="range"
-                class="slider"
-                id="filterFreq"
-                min="20"
-                max="20000"
-                value="12000"
-              />
-            </div>
-            <div class="control-group">
-              <label
-                >Phase Shift (°): <span id="phaseShiftValue">0</span></label
-              >
-              <input
-                type="range"
-                class="slider"
-                id="phaseShift"
-                min="0"
-                max="360"
-                value="0"
-              />
-            </div>
-            <div class="control-group">
-              <label
-                >Session Duration (min):
-                <span id="durationValue">15</span></label
-              >
-                <input
-                  type="range"
-                  class="slider"
-                  id="sessionDuration"
-                  min="1"
-                  max="60"
-                  value="15"
-                />
-              </div>
-              <div class="control-group mode528">
-                <label>
-                  <input type="checkbox" id="mode528" /> 528 Mode
-                </label>
-                <input
-                  type="range"
-                  class="slider"
-                  id="mode528Slider"
-                  min="520"
-                  max="536"
-                  value="528"
-                />
-              </div>
-              <div class="control-group">
-                <label>
-                  <input type="checkbox" id="isochronicMode" /> Isochronic Pulse
-                  Layer
-                </label>
-              </div>
-              <div class="control-group">
-                <label>
-                  <input type="checkbox" id="deepBassMode" /> Deep Bass Beats
-                </label>
-              </div>
-            <div class="control-group">
-              <label>
-                <input type="checkbox" id="driftMode" /> Drift Mode
-              </label>
-            </div>
-            <div class="control-group">
-              <label for="driftWaveform">Drift Waveform</label>
-              <select id="driftWaveform">
-                <option value="sine">Sine</option>
-                <option value="triangle">Triangle</option>
-              </select>
-            </div>
-            <div class="control-group">
-              <label>
-                <input type="checkbox" id="entropyMode" /> Entropy Drift
-              </label>
-            </div>
-            <div class="control-group">
-              <label>
-                <input type="checkbox" id="rebalMode" checked /> REBAL Energy
-                Shield
-              </label>
-            </div>
-            <div class="control-group">
-              <label>
-                <input type="checkbox" id="breathCoachMode" /> Breath Coach
-              </label>
-            </div>
-            <div
-              class="control-group"
-              id="breathPatternGroup"
-              style="display: none"
-            >
-              <label
-                >Pattern:
-                <select id="breathPattern">
-                  <option value="box">Box 4-4-4-4</option>
-                  <option value="478">4-7-8</option>
-                  <option value="wimhof">Wim Hof</option>
-                </select>
-              </label>
-            </div>
-            <div class="control-group">
-              <label>
-                <input type="checkbox" id="affirmationMode" /> Affirmations
-              </label>
-            </div>
-            <div class="control-group">
-              <label>
-                <input type="checkbox" id="eegFeedback" /> EEG Feedback
-              </label>
-            </div>
-            <div class="control-group">
-              <label>Group ID
-                <input type="text" id="groupId" placeholder="optional" />
-              </label>
-              <button class="btn btn-secondary" id="joinGroupBtn">Join Group</button>
-            </div>
-          </div>
-            <div class="composer-section">
-              <h3>🎶 Session Composer <span class="help-icon" data-help="Create layered binaural tracks or run custom frequency programs">❔</span></h3>
-              <p class="composer-desc">
-                Layer additional frequencies to craft complex binaural mixes.
-              </p>
-              <div id="composerTracks"></div>
-              <button class="btn btn-secondary" id="addTrack" data-help="Add another binaural layer">➕ Add Layer</button>
-              <h4 style="margin-top:15px">Custom Frequency Program <span class="help-icon" data-help="Enter: duration base beat on each line (seconds & Hz)">❔</span></h4>
-              <textarea id="freqProgram" rows="3" placeholder="duration base beat per line" data-help="Example: '60 110 4' will play 60s at 110Hz base with 4Hz beat"></textarea>
-              <button class="btn btn-secondary" id="runProgram">▶ Run Program</button>
-              <button class="btn btn-secondary" id="stopProgram">■ Stop</button>
-            </div>
-
-          <div class="session-controls">
-            <button class="btn btn-primary" id="startBtn">
-              🚀 Begin Session
-            </button>
-            <button class="btn btn-secondary" id="stopBtn">⏹️ Stop</button>
-          </div>
-
-          <div class="bookmark-section">
-            <h3>🔖 Bookmarks</h3>
-            <div class="bookmark-slots" id="bookmarkSlots">
-              <button class="btn btn-secondary bookmark-btn" data-slot="1">
-                Slot 1
-              </button>
-              <button class="btn btn-secondary bookmark-btn" data-slot="2">
-                Slot 2
-              </button>
-              <button class="btn btn-secondary bookmark-btn" data-slot="3">
-                Slot 3
-              </button>
-              <button class="btn btn-secondary bookmark-btn" data-slot="4">
-                Slot 4
-              </button>
-              <button class="btn btn-secondary bookmark-btn" data-slot="5">
-                Slot 5
-              </button>
-              <button class="btn btn-secondary bookmark-btn" data-slot="6">
-                Slot 6
-              </button>
-              <button class="btn btn-secondary bookmark-btn" data-slot="7">
-                Slot 7
-              </button>
-              <button class="btn btn-secondary bookmark-btn" data-slot="8">
-                Slot 8
-              </button>
-              <button class="btn btn-secondary bookmark-btn" data-slot="9">
-                Slot 9
-              </button>
-              <button class="btn btn-secondary bookmark-btn" data-slot="10">
-                Slot 10
-              </button>
-              <button class="btn btn-secondary bookmark-btn" data-slot="11">
-                Slot 11
-              </button>
-              <button class="btn btn-secondary bookmark-btn" data-slot="12">
-                Slot 12
-              </button>
-            </div>
-          </div>
-
-          <div class="session-info" id="sessionInfo">
-            <div>
-              <span
-                class="status-indicator status-offline"
-                id="statusIndicator"
-              ></span
-              ><strong>Status:</strong> <span id="sessionStatus">Ready</span>
-            </div>
-            <div>
-              <strong>Timer:</strong> <span id="sessionTimer">00:00</span>
-            </div>
-            <div>
-              <strong>Current Focus:</strong>
-              <span id="currentFocus">None Selected</span>
-            </div>
-            <div class="session-progress">
-              <div class="progress-bar">
-                <div class="progress-fill" id="sessionProgress"></div>
-              </div>
-            </div>
-          </div>
+    <div class="lab">
+      <!-- ============ chamber ============ -->
+      <section class="card chamber" aria-label="Session">
+        <div class="stage">
+          <canvas id="scope" aria-hidden="true"></canvas>
+          <span class="stage-label">Left × Right</span>
+          <span class="stage-state"><span class="dot" id="stateDot"></span><span id="stateText">Ready</span></span>
+          <div class="breath" id="breath" aria-live="polite"><b id="breathText">Breathe in</b><div class="bar"><span id="breathBar"></span></div></div>
         </div>
-      </div>
+        <div class="readouts">
+          <div class="ro l"><small>Left ear</small><b id="roL">100 Hz</b></div>
+          <div class="ro r"><small>Right ear</small><b id="roR">107.5 Hz</b></div>
+          <div class="ro beat"><small>Beat</small><b id="roBeat">7.5 Hz</b></div>
+          <div class="ro"><small>Band</small><b id="roBand">Theta</b><em id="roFocus">Focus 10</em></div>
+        </div>
+        <div class="session-row">
+          <span class="timer" id="timer">00:00</span>
+          <div class="prog" aria-hidden="true"><span id="progBar"></span></div>
+          <span class="prog-meta" id="progMeta">of 15 min</span>
+        </div>
+        <div class="go">
+          <button type="button" class="btn btn-honey big" id="startBtn"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg><span>Begin session</span></button>
+          <button type="button" class="btn btn-line big" id="stopBtn" disabled><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>End</button>
+        </div>
+      </section>
 
-      <div class="journal-section">
-        <h3>📓 Session Journal & Insights</h3>
-        <div class="journal-form">
-          <div
-            style="
-              display: grid;
-              grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-              gap: 15px;
-            "
-          >
-            <div class="form-group">
-              <label>Focus Level Used</label>
-              <select id="journalFocus">
-                <option value="">Select Focus Level</option>
-                <option value="10">Focus 10 - Body Asleep</option>
-                <option value="12">Focus 12 - Expanded</option>
-                <option value="15">Focus 15 - No-Time</option>
-                <option value="21">Focus 21 - Threshold</option>
-                <option value="23+">Focus 23+ - Contact</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Mood Before (1-10)</label>
-              <input
-                type="number"
-                id="moodBefore"
-                min="1"
-                max="10"
-                placeholder="5"
-              />
-            </div>
-            <div class="form-group">
-              <label>Mood After (1-10)</label>
-              <input
-                type="number"
-                id="moodAfter"
-                min="1"
-                max="10"
-                placeholder="7"
-              />
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Session Reflection</label>
-            <textarea
-              id="reflection"
-              placeholder="Describe your experience, any visions, sensations, insights, or contact experiences..."
-            ></textarea>
-          </div>
-          <button class="btn btn-primary" id="saveJournal">
-            💾 Save Entry
-          </button>
-        </div>
+      <!-- ============ controls ============ -->
+      <div class="controls">
+        <section class="card" aria-labelledby="h-focus">
+          <h2 class="card-h" id="h-focus"><i aria-hidden="true"></i>Focus level</h2>
+          <div class="focus-grid" id="focusGrid"></div>
+          <p class="focus-desc" id="focusDesc"></p>
+        </section>
 
-        <div class="stats-display">
-          <div class="stat-card">
-            <div class="stat-value" id="totalSessions">0</div>
-            <div class="stat-label">Total Sessions</div>
+        <section class="card" aria-labelledby="h-sound">
+          <h2 class="card-h v" id="h-sound"><i aria-hidden="true"></i>Sound</h2>
+          <div class="ctl">
+            <div class="ctl-top"><label for="baseFreq">Carrier tone (left ear)</label><output id="baseOut">100 Hz</output></div>
+            <input type="range" id="baseFreq" min="40" max="600" step="0.5" value="100">
+            <div class="chips" role="group" aria-label="Carrier presets">
+              <button type="button" class="chip" data-base="100">100</button>
+              <button type="button" class="chip" data-base="136.1">136.1 OM</button>
+              <button type="button" class="chip" data-base="200">200</button>
+              <button type="button" class="chip" data-base="432">432</button>
+              <button type="button" class="chip" data-base="528">528</button>
+            </div>
           </div>
-          <div class="stat-card">
-            <div class="stat-value" id="totalTime">0m</div>
-            <div class="stat-label">Total Time</div>
+          <div class="ctl">
+            <div class="ctl-top"><label for="beatFreq">Beat (difference between ears)</label><output id="beatOut">7.5 Hz</output></div>
+            <input type="range" id="beatFreq" min="0.5" max="40" step="0.1" value="7.5">
+            <div class="hint" id="bandHint"></div>
           </div>
-          <div class="stat-card">
-            <div class="stat-value" id="favoriteLevel">-</div>
-            <div class="stat-label">Favorite Focus</div>
+          <div class="row2">
+            <div class="ctl">
+              <div class="ctl-top"><label for="volume">Volume</label><output id="volOut">40%</output></div>
+              <input type="range" id="volume" min="0" max="100" value="40">
+            </div>
+            <div class="ctl">
+              <div class="ctl-top"><label for="duration">Session length</label><output id="durOut">15 min</output></div>
+              <input type="range" id="duration" min="1" max="90" value="15">
+            </div>
           </div>
-          <div class="stat-card">
-            <div class="stat-value" id="contactEvents">0</div>
-            <div class="stat-label">Contact Events</div>
+          <div class="ctl">
+            <div class="ctl-top"><label for="waveType">Waveform</label></div>
+            <select id="waveType">
+              <option value="sine">Sine (smoothest, recommended)</option>
+              <option value="triangle">Triangle (soft, a little brighter)</option>
+              <option value="square">Square (buzzy)</option>
+              <option value="sawtooth">Sawtooth (harsh)</option>
+            </select>
           </div>
-        </div>
-        <button
-          class="btn btn-secondary"
-          id="analyzePatterns"
-          style="margin-top: 15px"
-        >
-          🔍 Analyze Patterns
-        </button>
-        <button
-          class="btn btn-secondary"
-          id="exportData"
-          style="margin-top: 15px"
-        >
-          ⬇️ Export Data
-        </button>
-        <label
-          class="btn btn-secondary"
-          for="importFile"
-          style="margin-top: 15px"
-          >⬆️ Import Data</label
-        >
-        <input
-          type="file"
-          id="importFile"
-          accept="application/json"
-          style="display: none"
-        />
-      </div>
-      <div class="analysis-overlay" id="analysisOverlay">
-        <div class="analysis-content">
-          <button
-            class="btn btn-secondary"
-            id="closeAnalysis"
-            style="float: right"
-          >
-            Close
-          </button>
-          <h3>📊 Pattern Analysis</h3>
-          <div id="analysisResults"></div>
-          <canvas id="analyticsChart" width="400" height="200"></canvas>
-        </div>
+
+          <details class="more">
+            <summary>Tone shaping <small>filter &amp; compressor</small></summary>
+            <div class="row2">
+              <div class="ctl"><div class="ctl-top"><label for="filterType">Filter</label></div>
+                <select id="filterType"><option value="none">None</option><option value="lowpass" selected>Low-pass</option><option value="highpass">High-pass</option><option value="bandpass">Band-pass</option></select></div>
+              <div class="ctl"><div class="ctl-top"><label for="filterFreq">Cutoff</label><output id="filterOut">12000 Hz</output></div>
+                <input type="range" id="filterFreq" min="20" max="20000" value="12000"></div>
+            </div>
+            <div class="row2">
+              <div class="ctl"><div class="ctl-top"><label for="compThreshold">Compressor threshold</label><output id="thrOut">-24 dB</output></div><input type="range" id="compThreshold" min="-60" max="0" value="-24"></div>
+              <div class="ctl"><div class="ctl-top"><label for="compRatio">Ratio</label><output id="ratioOut">12:1</output></div><input type="range" id="compRatio" min="1" max="20" value="12"></div>
+            </div>
+            <div class="row2">
+              <div class="ctl"><div class="ctl-top"><label for="compAttack">Attack</label><output id="atkOut">0.003 s</output></div><input type="range" id="compAttack" min="0" max="1" step="0.001" value="0.003"></div>
+              <div class="ctl"><div class="ctl-top"><label for="compRelease">Release</label><output id="relOut">0.25 s</output></div><input type="range" id="compRelease" min="0.01" max="1" step="0.01" value="0.25"></div>
+            </div>
+            <p class="hint">The filter only matters for square and sawtooth waves. A sine wave has nothing above its own pitch to filter.</p>
+          </details>
+        </section>
+
+        <section class="card" aria-labelledby="h-layers">
+          <h2 class="card-h" id="h-layers"><i aria-hidden="true"></i>Layers &amp; guides</h2>
+          <div class="toggles">
+            <label class="tg"><input type="checkbox" id="isoMode"><b>Isochronic pulse</b><small>Pulses the tone on and off at the beat rate. Works on speakers too.</small></label>
+            <div class="sub" id="isoSub"><div class="ctl"><div class="ctl-top"><label for="isoDepth">Pulse depth</label><output id="isoOut">60%</output></div><input type="range" id="isoDepth" min="10" max="100" value="60"></div></div>
+
+            <label class="tg"><input type="checkbox" id="bassMode"><b>Deep bass</b><small>A low binaural pair under everything, at the same beat.</small></label>
+            <div class="sub" id="bassSub"><div class="ctl"><div class="ctl-top"><label for="bassFreq">Bass tone</label><output id="bassOut">55 Hz</output></div><input type="range" id="bassFreq" min="30" max="90" value="55"></div></div>
+
+            <label class="tg"><input type="checkbox" id="driftMode"><b>Drift</b><small>Slowly sweeps the beat 30% above and below your setting.</small></label>
+            <div class="sub" id="driftSub"><div class="row2">
+              <div class="ctl"><div class="ctl-top"><label for="driftWave">Shape</label></div><select id="driftWave"><option value="sine">Smooth wave</option><option value="triangle">Straight ramps</option></select></div>
+              <div class="ctl"><div class="ctl-top"><label for="driftPeriod">One sweep every</label><output id="driftOut">60 s</output></div><input type="range" id="driftPeriod" min="15" max="300" step="5" value="60"></div>
+            </div></div>
+
+            <label class="tg"><input type="checkbox" id="entropyMode"><b>Entropy wander</b><small>Lets the tones wander a little at random every few seconds, then pulls them back.</small></label>
+
+            <label class="tg"><input type="checkbox" id="rebalMode" checked><b>REBAL shield</b><small>Shows the resonant energy balloon around the beat on screen.</small></label>
+
+            <label class="tg"><input type="checkbox" id="breathMode"><b>Breath coach</b><small>Paces your breathing on screen while the session runs.</small></label>
+            <div class="sub" id="breathSub"><div class="ctl"><div class="ctl-top"><label for="breathPattern">Pattern</label></div>
+              <select id="breathPattern"><option value="box">Box · 4 in, 4 hold, 4 out, 4 hold</option><option value="478">4-7-8 · calming</option><option value="coherent">Coherent · 5.5 in, 5.5 out</option><option value="wimhof">Energizing · 2 in, 2 out</option></select></div></div>
+
+            <label class="tg"><input type="checkbox" id="affirmMode"><b>Spoken affirmations</b><small>A soft voice offers a short affirmation every couple of minutes.</small></label>
+            <div class="sub" id="affirmSub"><div class="ctl"><div class="ctl-top"><label for="affirmText">Your affirmations, one per line</label></div>
+              <textarea id="affirmText" rows="4"></textarea></div></div>
+          </div>
+
+          <details class="more">
+            <summary>Session composer <small>extra layers &amp; programs</small></summary>
+            <p class="hint">Add more binaural pairs on top of the main one. Each layer has its own carrier, beat and level.</p>
+            <div id="layers"></div>
+            <button type="button" class="btn btn-line sm" id="addLayer" style="margin-top:10px">+ Add layer</button>
+
+            <div class="ctl" style="margin-top:18px">
+              <div class="ctl-top"><label for="program">Frequency program</label></div>
+              <textarea id="program" rows="4" placeholder="seconds  carrier  beat&#10;120 100 10&#10;300 100 6&#10;600 90 4"></textarea>
+              <div class="hint">One step per line: how long, carrier Hz, beat Hz. Each step glides into the next, and the last one holds until the session ends.</div>
+              <div style="display:flex;gap:8px;margin-top:6px">
+                <button type="button" class="btn btn-ghost sm" id="runProgram">Run program</button>
+                <button type="button" class="btn btn-line sm" id="stopProgram">Stop program</button>
+              </div>
+              <div class="prog-status" id="programStatus" aria-live="polite"></div>
+            </div>
+          </details>
+
+          <details class="more">
+            <summary>EEG &amp; group sessions <small>needs the Node server</small></summary>
+            <label class="tg" style="margin-top:8px"><input type="checkbox" id="eegMode"><b>EEG feedback</b><small>Nudges the tones from live brainwave data sent by the OpenBCI bridge.</small></label>
+            <div class="ctl">
+              <div class="ctl-top"><label for="groupId">Group ID</label><span class="net"><span class="dot" id="netDot"></span><span id="netText">offline</span></span></div>
+              <div style="display:flex;gap:8px"><input type="text" id="groupId" placeholder="e.g. full-moon-circle" autocomplete="off"><button type="button" class="btn btn-ghost sm" id="joinGroup">Join</button></div>
+              <div class="hint">These only work when Hemi-Lab is served by <code>node server.js</code>. On a plain web host there's nothing to connect to.</div>
+            </div>
+          </details>
+        </section>
+
+        <section class="card" aria-labelledby="h-book">
+          <h2 class="card-h v" id="h-book"><i aria-hidden="true"></i>Saved setups<small>stored in this browser</small></h2>
+          <div class="slots" id="slots"></div>
+        </section>
       </div>
     </div>
 
-    <script>
-      class HemiLabGateway {
-        constructor() {
-          this.audioContext = null;
-          this.engine = null;
-          this.leftOscillator = null;
-          this.rightOscillator = null;
-          this.isochronicOscillator = null;
-          this.deepBassOscillator = null;
-          this.deepBassGain = null;
-          this.deepBassFade = 0.05;
-          this.phaseDelayNode = null;
-          this.leftAnalyser = null;
-          this.rightAnalyser = null;
-          this.eqAnimation = null;
-          this.gainNode = null;
-          this.isPlaying = false;
-          this.sessionStartTime = null;
-          this.sessionTimer = null;
-          this.currentFocusLevel = null;
-          this.breathCycle = null;
-          this.extraEngines = [];
-          this.affirmations = [
-            "You are calm and focused.",
-            "Every breath deepens your awareness.",
-            "Your mind is open and clear.",
-            "Positive energy surrounds you.",
-          ];
-          this.targetDuration = 15 * 60;
-
-          // EEG feedback
-          this.eegSocket = null;
-          this.eegEnabled = false;
-          this.eegAdjust = {};
-          this.groupId = null;
-          this.programTimers = [];
-          this.entropyInterval = null;
-
-          this.focusPresets = {
-            10: {
-              baseFreq: 100,
-              beatFreq: 7.5,
-              description: "Body asleep, mind awake",
-            },
-            12: {
-              baseFreq: 110,
-              beatFreq: 9,
-              description: "Expanded awareness state",
-            },
-            15: { baseFreq: 80, beatFreq: 1, description: "No-time zone" },
-            21: { baseFreq: 90, beatFreq: 4, description: "Gateway threshold" },
-            "23+": {
-              baseFreq: 70,
-              beatFreq: 2.5,
-              description: "Contact/multidimensional states",
-            },
-          };
-
-          this.initializeUI();
-          this.loadUserData();
-          this.initializeBookmarks();
-        }
-
-        async initializeAudio() {
-          if (!this.audioContext) {
-            this.audioContext = new (window.AudioContext ||
-              window.webkitAudioContext)();
-            this.gainNode = this.audioContext.createGain();
-            this.gainNode.connect(this.audioContext.destination);
-            const compSettings = {
-              threshold: parseFloat(
-                document.getElementById("compThreshold").value,
-              ),
-              ratio: parseFloat(document.getElementById("compRatio").value),
-              attack: parseFloat(document.getElementById("compAttack").value),
-              release: parseFloat(
-                document.getElementById("compRelease").value,
-              ),
-            };
-            const filterType = document.getElementById("filterType").value;
-            const filterFreq = parseFloat(
-              document.getElementById("filterFreq").value,
-            );
-            this.engine = new BinauralEngine(
-              this.audioContext,
-              this.gainNode,
-              compSettings,
-              filterType,
-              filterFreq,
-            );
-            this.initEqualizer();
-          }
-
-          if (this.audioContext.state === "suspended") {
-            await this.audioContext.resume();
-          }
-        }
-
-        initializeUI() {
-          // Focus level selection
-          document.querySelectorAll(".focus-btn").forEach((btn) => {
-            btn.addEventListener("click", (e) => {
-              const level = e.target.dataset.focus;
-              this.selectFocusLevel(level);
-            });
-          });
-
-          document
-            .getElementById("focusSlider")
-            .addEventListener("input", (e) => {
-              document.getElementById("focusSliderValue").textContent =
-                e.target.value;
-              const value = parseFloat(e.target.value);
-              const levels = Object.keys(this.focusPresets).map((l) =>
-                parseFloat(l),
-              );
-              const nearest = levels.reduce(
-                (a, b) => (Math.abs(b - value) < Math.abs(a - value) ? b : a),
-                levels[0],
-              );
-              this.selectFocusLevel(nearest.toString());
-            });
-
-          // Audio controls
-          document.getElementById("baseFreq").addEventListener("input", (e) => {
-            document.getElementById("baseFreqValue").textContent =
-              e.target.value;
-            if (this.isPlaying) this.updateFrequencies();
-          });
-
-          document.getElementById("beatFreq").addEventListener("input", (e) => {
-            document.getElementById("beatFreqValue").textContent =
-              e.target.value;
-            if (this.isPlaying) this.updateFrequencies();
-          });
-
-          document
-            .getElementById("waveType")
-            .addEventListener("change", (e) => {
-              if (this.engine) {
-                this.engine.setWaveType(e.target.value);
-              }
-              if (this.isPlaying) {
-                this.updateWaveType(e.target.value);
-              }
-            });
-
-          document.getElementById("volume").addEventListener("input", (e) => {
-            document.getElementById("volumeValue").textContent = e.target.value;
-            if (this.gainNode && this.audioContext) {
-              const now = this.audioContext.currentTime;
-              const targetVolume = e.target.value / 100;
-              // Use linear ramp for ultra-smooth volume changes
-              if (this.gainNode.gain.cancelScheduledValues) {
-                this.gainNode.gain.cancelScheduledValues(now);
-              }
-              if (this.gainNode.gain.linearRampToValueAtTime) {
-                this.gainNode.gain.setValueAtTime(this.gainNode.gain.value, now);
-                this.gainNode.gain.linearRampToValueAtTime(targetVolume, now + 0.015);
-              } else {
-                this.gainNode.gain.value = targetVolume;
-              }
-            }
-          });
-
-          document
-            .getElementById("compThreshold")
-            .addEventListener("input", (e) => {
-              document.getElementById("compThresholdValue").textContent =
-                e.target.value;
-              if (this.engine) {
-                this.engine.setCompressorSettings({
-                  threshold: parseFloat(e.target.value),
-                });
-              }
-            });
-
-          document
-            .getElementById("compRatio")
-            .addEventListener("input", (e) => {
-              document.getElementById("compRatioValue").textContent =
-                e.target.value;
-              if (this.engine) {
-                this.engine.setCompressorSettings({
-                  ratio: parseFloat(e.target.value),
-                });
-              }
-            });
-
-          document
-            .getElementById("compAttack")
-            .addEventListener("input", (e) => {
-              document.getElementById("compAttackValue").textContent =
-                e.target.value;
-              if (this.engine) {
-                this.engine.setCompressorSettings({
-                  attack: parseFloat(e.target.value),
-                });
-              }
-            });
-
-          document
-            .getElementById("compRelease")
-            .addEventListener("input", (e) => {
-              document.getElementById("compReleaseValue").textContent =
-                e.target.value;
-              if (this.engine) {
-                this.engine.setCompressorSettings({
-                  release: parseFloat(e.target.value),
-                });
-              }
-            });
-
-          document
-            .getElementById("filterType")
-            .addEventListener("change", (e) => {
-              const freqSlider = document.getElementById("filterFreq");
-              freqSlider.disabled = e.target.value === "none";
-              if (this.engine) {
-                this.engine.setFilter(
-                  e.target.value,
-                  parseFloat(freqSlider.value),
-                );
-              }
-            });
-
-          document
-            .getElementById("filterFreq")
-            .addEventListener("input", (e) => {
-              document.getElementById("filterFreqValue").textContent =
-                e.target.value;
-              const type = document.getElementById("filterType").value;
-              if (this.engine && type !== "none") {
-                this.engine.setFilter(type, parseFloat(e.target.value));
-              }
-            });
-
-          document.getElementById("filterFreq").disabled =
-            document.getElementById("filterType").value === "none";
-
-          document
-            .getElementById("phaseShift")
-            .addEventListener("input", (e) => {
-              document.getElementById("phaseShiftValue").textContent =
-                e.target.value;
-              if (this.isPlaying) this.updatePhaseShift();
-            });
-
-          document
-            .getElementById("sessionDuration")
-            .addEventListener("input", (e) => {
-              document.getElementById("durationValue").textContent =
-                e.target.value;
-              this.targetDuration = parseInt(e.target.value) * 60;
-            });
-          // Session controls
-          document
-            .getElementById("startBtn")
-            .addEventListener("click", () => this.startSession());
-          document
-            .getElementById("stopBtn")
-            .addEventListener("click", () => this.stopSession());
-
-          // Breath coach toggle
-          document
-            .getElementById("breathCoachMode")
-            .addEventListener("change", (e) => {
-              document.getElementById("breathPatternGroup").style.display = e
-                .target.checked
-                ? "block"
-                : "none";
-              if (e.target.checked && this.isPlaying) {
-                this.startBreathCoach();
-              } else {
-                this.stopBreathCoach();
-              }
-            });
-
-          document
-            .getElementById("addTrack")
-            .addEventListener("click", () => this.addTrack());
-          this.addTrack();
-
-          // Affirmation toggle
-          document
-            .getElementById("affirmationMode")
-            .addEventListener("change", (e) => {
-              if (e.target.checked && this.isPlaying) {
-                this.speakAffirmation();
-              }
-            });
-
-          document
-            .getElementById("rebalMode")
-            .addEventListener("change", () => {
-              this.animateREBAL();
-            });
-
-          document
-            .getElementById("isochronicMode")
-            .addEventListener("change", (e) => {
-              if (this.isPlaying) {
-                if (e.target.checked) {
-                  this.startIsochronicPulse(
-                    parseFloat(document.getElementById("beatFreq").value),
-                    parseFloat(document.getElementById("volume").value) / 100,
-                  );
-                } else {
-                  this.stopIsochronicPulse();
-                }
-              }
-            });
-
-            document
-              .getElementById("driftMode")
-              .addEventListener("change", (e) => {
-                if (this.engine) {
-                  if (e.target.checked) {
-                    const wave = document.getElementById("driftWaveform").value;
-                    this.engine.startDrift(undefined, undefined, undefined, wave);
-                  } else {
-                    this.engine.stopDrift();
-                  }
-                }
-              });
-
-            document
-              .getElementById("driftWaveform")
-              .addEventListener("change", (e) => {
-                if (this.engine && document.getElementById("driftMode").checked) {
-                  this.engine.startDrift(
-                    undefined,
-                    undefined,
-                    undefined,
-                    e.target.value,
-                  );
-                }
-              });
-
-          document
-            .getElementById("deepBassMode")
-            .addEventListener("change", (e) => {
-              if (this.isPlaying) {
-                if (e.target.checked) {
-                  this.startDeepBass(
-                    parseFloat(document.getElementById("volume").value) / 100,
-                  );
-                } else {
-                  this.stopDeepBass();
-                }
-              }
-            });
-
-          const mode528 = document.getElementById("mode528");
-          const mode528Slider = document.getElementById("mode528Slider");
-          mode528.addEventListener("change", (e) => {
-            if (e.target.checked) {
-              document.getElementById("baseFreq").value = mode528Slider.value;
-              document.getElementById("baseFreqValue").textContent =
-                mode528Slider.value;
-              if (this.isPlaying) this.updateFrequencies();
-            }
-          });
-          mode528Slider.addEventListener("input", (e) => {
-            document.getElementById("baseFreq").value = e.target.value;
-            document.getElementById("baseFreqValue").textContent = e.target.value;
-            if (mode528.checked && this.isPlaying) this.updateFrequencies();
-          });
-
-          // Journal saving
-          document
-            .getElementById("saveJournal")
-            .addEventListener("click", () => this.saveJournalEntry());
-
-          // Pattern analysis
-          document
-            .getElementById("analyzePatterns")
-            .addEventListener("click", () => {
-              const patterns = this.analyzeSessionPatterns();
-              document.getElementById("analysisResults").innerHTML =
-                this.formatPatternAnalysis(patterns);
-              this.renderAnalyticsChart();
-              document.getElementById("analysisOverlay").style.display = "flex";
-            });
-          document
-            .getElementById("closeAnalysis")
-            .addEventListener("click", () => {
-              document.getElementById("analysisOverlay").style.display = "none";
-            });
-          document
-            .getElementById("aiAnalyze")
-            .addEventListener("click", () => this.analyzeJournalAI());
-
-          // Data import/export
-          document
-            .getElementById("exportData")
-            .addEventListener("click", () => this.exportData());
-          document
-            .getElementById("importFile")
-            .addEventListener("change", (e) =>
-              this.importData(e.target.files[0]),
-            );
-
-          // EEG feedback toggle
-          document
-            .getElementById("eegFeedback")
-            .addEventListener("change", (e) => {
-              if (e.target.checked) {
-                this.connectEEG();
-              } else {
-                this.disconnectEEG();
-              }
-            });
-
-          document
-            .getElementById("joinGroupBtn")
-            .addEventListener("click", () => this.joinGroup());
-
-          document
-            .getElementById("runProgram")
-            .addEventListener("click", () => this.startFrequencyProgram());
-          document
-            .getElementById("stopProgram")
-            .addEventListener("click", () => this.stopFrequencyProgram());
-
-          document
-            .getElementById("entropyMode")
-            .addEventListener("change", (e) => {
-              if (e.target.checked) {
-                this.startEntropyDrift();
-              } else {
-                this.stopEntropyDrift();
-              }
-            });
-        }
-
-        connectEEG() {
-          const url =
-            location.origin && location.origin.startsWith("http")
-              ? location.origin.replace(/^http/, "ws")
-              : "ws://localhost:3000";
-          this.eegSocket = new WebSocket(url);
-          this.eegSocket.addEventListener("message", (e) =>
-            this.handleEEGData(e.data),
-          );
-          this.eegSocket.addEventListener("open", () =>
-            console.log("EEG socket connected"),
-          );
-          this.eegSocket.addEventListener("close", () =>
-            console.log("EEG socket closed"),
-          );
-          this.eegEnabled = true;
-        }
-
-        disconnectEEG() {
-          if (this.eegSocket) {
-            this.eegSocket.close();
-            this.eegSocket = null;
-          }
-          this.eegEnabled = false;
-          this.eegAdjust = {};
-        }
-
-        joinGroup() {
-          const id = document.getElementById("groupId").value.trim();
-          if (!id) return;
-          this.groupId = id;
-          const msg = JSON.stringify({ type: "join", group: id });
-          if (!this.eegSocket || this.eegSocket.readyState !== WebSocket.OPEN) {
-            this.connectEEG();
-            this.eegSocket.addEventListener(
-              "open",
-              () => this.eegSocket?.send(msg),
-              { once: true },
-            );
-          } else {
-            this.eegSocket.send(msg);
-          }
-        }
-
-        handleEEGData(raw) {
-          let data;
-          try {
-            data = JSON.parse(raw);
-          } catch (e) {
-            return;
-          }
-
-          let alpha = 0,
-            beta = 0,
-            theta = 0,
-            delta = 0,
-            count = 0;
-          Object.values(data).forEach((ch) => {
-            if (!ch) return;
-            alpha += ch.alpha || 0;
-            beta += ch.beta || 0;
-            theta += ch.theta || 0;
-            delta += ch.delta || 0;
-            count++;
-          });
-          if (!count) return;
-          alpha /= count;
-          beta /= count;
-          theta /= count;
-          delta /= count;
-
-          const alphaBeta = beta ? alpha / beta : 1;
-          const thetaDelta = delta ? theta / delta : 1;
-
-          this.eegAdjust = {
-            baseOffset: (alphaBeta - 1) * 2,
-            beatOffset: thetaDelta - 1,
-            volume: Math.max(
-              0,
-              Math.min(
-                1,
-                0.5 + (alpha - beta) / (alpha + beta + theta + delta + 0.0001),
-              ),
-            ),
-          };
-
-          if (this.isPlaying) this.updateFrequencies();
-        }
-
-        selectFocusLevel(level) {
-          document
-            .querySelectorAll(".focus-btn")
-            .forEach((btn) => btn.classList.remove("active"));
-          document
-            .querySelector(`[data-focus="${level}"]`)
-            .classList.add("active");
-
-          this.currentFocusLevel = level;
-          document.getElementById("currentFocus").textContent =
-            `Focus ${level}`;
-          if (document.getElementById("focusSlider")) {
-            document.getElementById("focusSlider").value =
-              parseFloat(level) || parseFloat(level);
-            document.getElementById("focusSliderValue").textContent = level;
-          }
-
-          if (this.focusPresets[level]) {
-            const preset = this.focusPresets[level];
-            document.getElementById("baseFreq").value = preset.baseFreq;
-            document.getElementById("beatFreq").value = preset.beatFreq;
-            document.getElementById("baseFreqValue").textContent =
-              preset.baseFreq;
-            document.getElementById("beatFreqValue").textContent =
-              preset.beatFreq;
-
-            if (this.isPlaying) this.updateFrequencies();
-          }
-        }
-
-        async startSession() {
-          try {
-            await this.initializeAudio();
-            const progressEl = document.getElementById("sessionProgress");
-            if (progressEl) progressEl.style.width = "0%";
-
-            const baseFreq = parseFloat(
-              document.getElementById("baseFreq").value,
-            );
-            const beatFreq = parseFloat(
-              document.getElementById("beatFreq").value,
-            );
-            const waveType = document.getElementById("waveType").value;
-            const volume =
-              parseFloat(document.getElementById("volume").value) / 100;
-            const phaseShift = parseFloat(
-              document.getElementById("phaseShift").value,
-            );
-            this.targetDuration =
-              parseInt(document.getElementById("sessionDuration").value) * 60;
-
-            const delaySeconds = phaseShift / 360 / baseFreq;
-
-            // Create binaural beat
-            this.leftOscillator = this.audioContext.createOscillator();
-            this.rightOscillator = this.audioContext.createOscillator();
-            this.leftOscillator.type = waveType;
-            this.rightOscillator.type = waveType;
-
-            this.phaseDelayNode = this.audioContext.createDelay(0.1);
-            this.phaseDelayNode.delayTime.value = delaySeconds;
-
-            const leftGain = this.audioContext.createGain();
-            const rightGain = this.audioContext.createGain();
-            const merger = this.audioContext.createChannelMerger(2);
-
-            if (!this.leftAnalyser || !this.rightAnalyser) {
-              this.initEqualizer();
-            }
-
-            this.leftOscillator.frequency.value = baseFreq;
-            this.rightOscillator.frequency.value = baseFreq + beatFreq;
-
-            this.leftOscillator.connect(leftGain);
-            this.rightOscillator.connect(this.phaseDelayNode);
-            this.phaseDelayNode.connect(rightGain);
-            leftGain.connect(this.leftAnalyser);
-            rightGain.connect(this.rightAnalyser);
-            this.leftAnalyser.connect(merger, 0, 0);
-            this.rightAnalyser.connect(merger, 0, 1);
-            merger.connect(this.gainNode);
-
-            leftGain.gain.value = volume * 0.5;
-            rightGain.gain.value = volume * 0.5;
-
-            const now = this.audioContext.currentTime;
-            this.gainNode.gain.setValueAtTime(0, now);
-            if (this.gainNode.gain.linearRampToValueAtTime) {
-              this.gainNode.gain.linearRampToValueAtTime(volume, now + 0.1);
-            } else {
-              this.gainNode.gain.value = volume;
-            }
-
-            this.leftOscillator.start();
-            this.rightOscillator.start();
-
-            this.drawEqualizer();
-
-            this.engine.leftOsc = this.leftOscillator;
-            this.engine.rightOsc = this.rightOscillator;
-            this.engine.setWaveType(waveType);
-            this.engine.gainNode = this.gainNode;
-            if (document.getElementById("driftMode").checked) {
-              const wave = document.getElementById("driftWaveform").value;
-              this.engine.startDrift(undefined, undefined, undefined, wave);
-            }
-
-            // Start composed layers
-            this.extraEngines.forEach((e) => e.stop());
-            this.extraEngines = [];
-            document.querySelectorAll("#composerTracks .track").forEach((t) => {
-              const b = parseFloat(t.querySelector(".track-base").value);
-              const beat = parseFloat(t.querySelector(".track-beat").value);
-              const vol = parseFloat(t.querySelector(".track-vol").value) / 100;
-              const eng = new BinauralEngine(
-                this.audioContext,
-                this.audioContext.createGain(),
-                {},
-                document.getElementById("filterType").value,
-                parseFloat(document.getElementById("filterFreq").value),
-              );
-              eng.gainNode.connect(this.gainNode);
-              eng.start(b, beat, vol, waveType);
-              this.extraEngines.push(eng);
-            });
-
-            // Isochronic pulse if enabled
-            if (document.getElementById("isochronicMode").checked) {
-              this.startIsochronicPulse(beatFreq, volume);
-            }
-
-            // Deep bass layer if enabled
-            if (document.getElementById("deepBassMode").checked) {
-              this.startDeepBass(volume);
-            }
-
-            this.isPlaying = true;
-            this.sessionStartTime = Date.now();
-            this.updateSessionStatus("Active");
-            this.startSessionTimer();
-
-            if (document.getElementById("breathCoachMode").checked) {
-              this.startBreathCoach();
-            }
-
-            if (document.getElementById("affirmationMode").checked) {
-              this.speakAffirmation();
-            }
-
-            this.initializeContactMode();
-
-            // Visual effects
-            this.animateREBAL();
-
-            document.getElementById("startBtn").textContent =
-              "🔄 Session Active";
-            document.getElementById("startBtn").disabled = true;
-          } catch (error) {
-            console.error("Error starting session:", error);
-            alert(
-              "Error starting audio session. Please check your browser permissions.",
-            );
-          }
-        }
-
-        startIsochronicPulse(frequency, volume) {
-          if (this.engine) {
-            this.engine.startIsochronic(frequency, volume);
-          }
-        }
-
-        stopIsochronicPulse() {
-          if (this.engine) {
-            this.engine.stopIsochronic();
-          }
-        }
-
-        startDeepBass(volume, fadeDuration = this.deepBassFade) {
-          const now = this.audioContext.currentTime;
-          this.deepBassOscillator = this.audioContext.createOscillator();
-          this.deepBassGain = this.audioContext.createGain();
-          this.deepBassOscillator.type = "sine";
-          this.deepBassOscillator.frequency.value = 60;
-          this.deepBassOscillator.connect(this.deepBassGain);
-          this.deepBassGain.connect(this.gainNode);
-          this.deepBassGain.gain.setValueAtTime(0, now);
-          if (this.deepBassGain.gain.linearRampToValueAtTime) {
-            this.deepBassGain.gain.linearRampToValueAtTime(
-              volume * 0.3,
-              now + fadeDuration,
-            );
-          } else {
-            this.deepBassGain.gain.value = volume * 0.3;
-          }
-          this.deepBassOscillator.start(now);
-        }
-
-        stopDeepBass(fadeDuration = this.deepBassFade) {
-          if (this.deepBassOscillator && this.deepBassGain) {
-            const now = this.audioContext.currentTime;
-            this.deepBassGain.gain.cancelScheduledValues(now);
-            this.deepBassGain.gain.setValueAtTime(
-              this.deepBassGain.gain.value,
-              now,
-            );
-            if (this.deepBassGain.gain.linearRampToValueAtTime) {
-              this.deepBassGain.gain.linearRampToValueAtTime(0, now + fadeDuration);
-            } else {
-              this.deepBassGain.gain.value = 0;
-            }
-            this.deepBassOscillator.stop(now + fadeDuration);
-            setTimeout(() => {
-              if (this.deepBassOscillator) {
-                this.deepBassOscillator.disconnect();
-                this.deepBassOscillator = null;
-              }
-              if (this.deepBassGain) {
-                this.deepBassGain.disconnect();
-                this.deepBassGain = null;
-              }
-            }, fadeDuration * 1000);
-          }
-        }
-
-        updateFrequencies() {
-          if (!this.isPlaying) return;
-
-          let baseFreq = parseFloat(document.getElementById("baseFreq").value);
-          let beatFreq = parseFloat(document.getElementById("beatFreq").value);
-          const phaseShift = parseFloat(
-            document.getElementById("phaseShift").value,
-          );
-
-         if (this.eegEnabled && this.eegAdjust) {
-            baseFreq += this.eegAdjust.baseOffset || 0;
-            beatFreq += this.eegAdjust.beatOffset || 0;
-            if (this.eegAdjust.volume != null && this.gainNode) {
-              const now = this.audioContext.currentTime;
-              if (this.gainNode.gain.cancelScheduledValues) {
-                this.gainNode.gain.cancelScheduledValues(now);
-              }
-              if (this.gainNode.gain.linearRampToValueAtTime) {
-                this.gainNode.gain.setValueAtTime(this.gainNode.gain.value, now);
-                this.gainNode.gain.linearRampToValueAtTime(this.eegAdjust.volume, now + 0.015);
-              } else {
-                this.gainNode.gain.value = this.eegAdjust.volume;
-              }
-              document.getElementById("volume").value = Math.round(
-                this.eegAdjust.volume * 100,
-              );
-              document.getElementById("volumeValue").textContent = Math.round(
-                this.eegAdjust.volume * 100,
-              );
-            }
-          }
-
-          const now = this.audioContext.currentTime;
-          if (this.leftOscillator && this.rightOscillator) {
-            if (this.leftOscillator.frequency.cancelScheduledValues) {
-              this.leftOscillator.frequency.cancelScheduledValues(now);
-            }
-            if (this.leftOscillator.frequency.setTargetAtTime) {
-              this.leftOscillator.frequency.setTargetAtTime(baseFreq, now, 0.1);
-            } else {
-              this.leftOscillator.frequency.value = baseFreq;
-            }
-            const target = baseFreq + beatFreq;
-            if (this.rightOscillator.frequency.cancelScheduledValues) {
-              this.rightOscillator.frequency.cancelScheduledValues(now);
-            }
-            if (this.rightOscillator.frequency.setTargetAtTime) {
-              this.rightOscillator.frequency.setTargetAtTime(target, now, 0.1);
-            } else {
-              this.rightOscillator.frequency.value = target;
-            }
-          }
-
-          if (this.isochronicOscillator) {
-            if (this.isochronicOscillator.frequency.cancelScheduledValues) {
-              this.isochronicOscillator.frequency.cancelScheduledValues(now);
-            }
-            if (this.isochronicOscillator.frequency.setTargetAtTime) {
-              this.isochronicOscillator.frequency.setTargetAtTime(
-                beatFreq,
-                now,
-                0.1,
-              );
-            } else {
-              this.isochronicOscillator.frequency.value = beatFreq;
-            }
-          }
-
-          if (this.phaseDelayNode) {
-            const delay = phaseShift / 360 / baseFreq;
-            if (this.phaseDelayNode.delayTime.cancelScheduledValues) {
-              this.phaseDelayNode.delayTime.cancelScheduledValues(now);
-            }
-            if (this.phaseDelayNode.delayTime.setTargetAtTime) {
-              this.phaseDelayNode.delayTime.setTargetAtTime(delay, now, 0.1);
-            } else {
-              this.phaseDelayNode.delayTime.value = delay;
-            }
-          }
-        }
-
-        updatePhaseShift() {
-          if (!this.isPlaying || !this.phaseDelayNode) return;
-
-          const baseFreq = parseFloat(
-            document.getElementById("baseFreq").value,
-          );
-          const phaseShift = parseFloat(
-            document.getElementById("phaseShift").value,
-          );
-          this.phaseDelayNode.delayTime.value = phaseShift / 360 / baseFreq;
-        }
-
-        updateWaveType(type) {
-          if (this.leftOscillator) this.leftOscillator.type = type;
-          if (this.rightOscillator) this.rightOscillator.type = type;
-          this.extraEngines.forEach((e) => e.setWaveType(type));
-        }
-
-        stopSession() {
-          const finalizeStop = () => {
-            if (this.engine) {
-              this.engine.stopDrift();
-            }
-            if (this.leftOscillator) {
-              this.leftOscillator.stop();
-              this.leftOscillator = null;
-            }
-            if (this.rightOscillator) {
-              this.rightOscillator.stop();
-              this.rightOscillator = null;
-            }
-            if (this.phaseDelayNode) {
-              this.phaseDelayNode.disconnect();
-              this.phaseDelayNode = null;
-            }
-            if (this.isochronicOscillator) {
-              this.isochronicOscillator.stop();
-              this.isochronicOscillator = null;
-            }
-
-            this.stopDeepBass();
-            this.stopEqualizer();
-            const l = document.getElementById("leftEQ");
-            const r = document.getElementById("rightEQ");
-            if (l) l.getContext("2d").clearRect(0, 0, l.width, l.height);
-            if (r) r.getContext("2d").clearRect(0, 0, r.width, r.height);
-
-            this.extraEngines.forEach((e) => e.stop());
-            this.extraEngines = [];
-
-            this.isPlaying = false;
-            this.animateREBAL();
-            this.updateSessionStatus("Complete");
-            this.stopSessionTimer();
-            this.stopBreathCoach();
-
-            document.getElementById("startBtn").textContent = "🚀 Begin Session";
-            document.getElementById("startBtn").disabled = false;
-
-            // Auto-populate journal
-            if (this.currentFocusLevel) {
-              document.getElementById("journalFocus").value =
-                this.currentFocusLevel;
-            }
-          };
-
-          if (this.gainNode && this.audioContext) {
-            const now = this.audioContext.currentTime;
-            if (this.gainNode.gain.linearRampToValueAtTime) {
-              this.gainNode.gain.cancelScheduledValues(now);
-              this.gainNode.gain.linearRampToValueAtTime(0, now + 0.1);
-              setTimeout(finalizeStop, 120);
-              return;
-            }
-            this.gainNode.gain.value = 0;
-          }
-
-          finalizeStop();
-        }
-
-        startSessionTimer() {
-          const progressEl = document.getElementById("sessionProgress");
-          progressEl.style.width = "0%";
-          this.sessionTimer = setInterval(() => {
-            const elapsed = Math.floor(
-              (Date.now() - this.sessionStartTime) / 1000,
-            );
-            const minutes = Math.floor(elapsed / 60);
-            const seconds = elapsed % 60;
-            document.getElementById("sessionTimer").textContent =
-              `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-            if (this.targetDuration) {
-              const pct = Math.min((elapsed / this.targetDuration) * 100, 100);
-              progressEl.style.width = `${pct}%`;
-            }
-            if (this.targetDuration && elapsed >= this.targetDuration) {
-              this.stopSession();
-            }
-          }, 1000);
-        }
-
-        stopSessionTimer() {
-          if (this.sessionTimer) {
-            clearInterval(this.sessionTimer);
-            this.sessionTimer = null;
-          }
-          const progressEl = document.getElementById("sessionProgress");
-          if (progressEl) progressEl.style.width = "0%";
-        }
-
-        startBreathCoach() {
-          const breathCoach = document.getElementById("breathCoach");
-          const breathText = document.getElementById("breathText");
-          const breathProgress = document.getElementById("breathProgress");
-
-          breathCoach.classList.add("active");
-
-          let phase = 0; // 0: inhale, 1: hold, 2: exhale, 3: hold
-          const pattern = document.getElementById("breathPattern").value;
-          let durations, phases;
-          if (pattern === "478") {
-            durations = [4000, 7000, 8000, 0];
-            phases = ["Breathe In", "Hold", "Breathe Out", ""];
-          } else if (pattern === "wimhof") {
-            durations = [2000, 2000, 2000, 2000];
-            phases = ["In", "Hold", "Out", "Hold"];
-          } else {
-            durations = [4000, 4000, 4000, 4000];
-            phases = ["Breathe In", "Hold", "Breathe Out", "Hold"];
-          }
-
-          const cycleBreath = () => {
-            if (
-              !document.getElementById("breathCoachMode").checked ||
-              !this.isPlaying
-            )
-              return;
-
-            breathText.textContent = phases[phase];
-            breathProgress.style.transition = `width ${durations[phase]}ms linear`;
-            breathProgress.style.width = "100%";
-
-            setTimeout(() => {
-              breathProgress.style.transition = "none";
-              breathProgress.style.width = "0%";
-              phase = (phase + 1) % 4;
-              setTimeout(cycleBreath, 100);
-            }, durations[phase]);
-          };
-
-          cycleBreath();
-        }
-
-        stopBreathCoach() {
-          document.getElementById("breathCoach").classList.remove("active");
-        }
-
-        initEqualizer() {
-          this.leftAnalyser = this.audioContext.createAnalyser();
-          this.rightAnalyser = this.audioContext.createAnalyser();
-          this.leftAnalyser.fftSize = 64;
-          this.rightAnalyser.fftSize = 64;
-        }
-
-        drawEqualizer() {
-          if (!this.leftAnalyser || !this.rightAnalyser) return;
-          const leftCanvas = document.getElementById("leftEQ");
-          const rightCanvas = document.getElementById("rightEQ");
-          if (!leftCanvas || !rightCanvas) return;
-          const lctx = leftCanvas.getContext("2d");
-          const rctx = rightCanvas.getContext("2d");
-          const len = this.leftAnalyser.frequencyBinCount;
-          const ldata = new Uint8Array(len);
-          const rdata = new Uint8Array(len);
-          this.leftAnalyser.getByteFrequencyData(ldata);
-          this.rightAnalyser.getByteFrequencyData(rdata);
-          lctx.clearRect(0, 0, leftCanvas.width, leftCanvas.height);
-          rctx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
-          const lw = leftCanvas.width / len;
-          const rw = rightCanvas.width / len;
-          for (let i = 0; i < len; i++) {
-            const lh = (ldata[i] / 255) * leftCanvas.height;
-            const rh = (rdata[i] / 255) * rightCanvas.height;
-            lctx.fillStyle = "#00ff88";
-            lctx.fillRect(i * lw, leftCanvas.height - lh, lw - 1, lh);
-            rctx.fillStyle = "#0099ff";
-            rctx.fillRect(i * rw, rightCanvas.height - rh, rw - 1, rh);
-          }
-          this.eqAnimation = requestAnimationFrame(() => this.drawEqualizer());
-        }
-
-        stopEqualizer() {
-          if (this.eqAnimation) {
-            cancelAnimationFrame(this.eqAnimation);
-            this.eqAnimation = null;
-          }
-        }
-
-        startEntropyDrift() {
-          this.stopEntropyDrift();
-          this.entropyInterval = setInterval(() => {
-            const base = parseFloat(document.getElementById("baseFreq").value);
-            const beat = parseFloat(document.getElementById("beatFreq").value);
-            const newBase = base + (Math.random() - 0.5) * 2;
-            const newBeat = beat + (Math.random() - 0.5) * 0.5;
-            document.getElementById("baseFreq").value = newBase.toFixed(2);
-            document.getElementById("beatFreq").value = newBeat.toFixed(2);
-            this.updateFrequencies();
-          }, 5000);
-        }
-
-        stopEntropyDrift() {
-          if (this.entropyInterval) {
-            clearInterval(this.entropyInterval);
-            this.entropyInterval = null;
-          }
-        }
-
-        speakAffirmation() {
-          if (!("speechSynthesis" in window)) return;
-          const text =
-            this.affirmations[
-              Math.floor(Math.random() * this.affirmations.length)
-            ];
-          const utterance = new SpeechSynthesisUtterance(text);
-          speechSynthesis.speak(utterance);
-        }
-
-        animateREBAL() {
-          const orb = document.getElementById("rebalOrb");
-          if (document.getElementById("rebalMode").checked && this.isPlaying) {
-            orb.classList.add("animate");
-          } else {
-            orb.classList.remove("animate");
-          }
-        }
-
-        updateSessionStatus(status) {
-          document.getElementById("sessionStatus").textContent = status;
-          const indicator = document.getElementById("statusIndicator");
-          indicator.className =
-            "status-indicator " +
-            (status === "Active"
-              ? "status-active"
-              : status === "Contact"
-                ? "status-contact"
-                : "status-offline");
-        }
-
-        saveJournalEntry() {
-          const entry = {
-            timestamp: new Date().toISOString(),
-            focusLevel: document.getElementById("journalFocus").value,
-            moodBefore:
-              parseInt(document.getElementById("moodBefore").value) || null,
-            moodAfter:
-              parseInt(document.getElementById("moodAfter").value) || null,
-            reflection: document.getElementById("reflection").value,
-            sessionDuration: this.getLastSessionDuration(),
-          };
-
-          if (!entry.focusLevel || !entry.reflection.trim()) {
-            alert("Please select a focus level and add your reflection.");
-            return;
-          }
-
-          let journals = JSON.parse(
-            localStorage.getItem("hemilab_journals") || "[]",
-          );
-          journals.push(entry);
-          localStorage.setItem("hemilab_journals", JSON.stringify(journals));
-
-          // Update stats
-          this.updateStats();
-
-          // Clear form
-          document.getElementById("journalFocus").value = "";
-          document.getElementById("moodBefore").value = "";
-          document.getElementById("moodAfter").value = "";
-          document.getElementById("reflection").value = "";
-
-          alert(
-            "✨ Journal entry saved! Your consciousness journey is being tracked.",
-          );
-
-          // Check for contact event keywords
-          this.analyzeForContactEvent(entry.reflection);
-        }
-
-        getLastSessionDuration() {
-          if (this.sessionStartTime) {
-            return Math.floor((Date.now() - this.sessionStartTime) / 1000);
-          }
-          return 0;
-        }
-
-        analyzeForContactEvent(reflection) {
-          const contactKeywords = [
-            "entity",
-            "being",
-            "presence",
-            "voice",
-            "message",
-            "contact",
-            "communication",
-            "guide",
-            "spirit",
-            "other",
-            "they",
-            "spoke",
-            "told",
-            "showed",
-            "revealed",
-            "download",
-            "transmission",
-          ];
-
-          const text = reflection.toLowerCase();
-          const hasContactKeywords = contactKeywords.some((keyword) =>
-            text.includes(keyword),
-          );
-
-          if (hasContactKeywords) {
-            let userData = JSON.parse(
-              localStorage.getItem("hemilab_userdata") || "{}",
-            );
-            userData.contactEvents = (userData.contactEvents || 0) + 1;
-            localStorage.setItem("hemilab_userdata", JSON.stringify(userData));
-
-            this.updateSessionStatus("Contact");
-            setTimeout(() => {
-              alert(
-                "🛸 Contact event detected in your reflection! This has been logged for analysis.",
-              );
-            }, 500);
-          }
-        }
-
-        loadUserData() {
-          this.updateStats();
-        }
-
-        updateStats() {
-          const journals = JSON.parse(
-            localStorage.getItem("hemilab_journals") || "[]",
-          );
-          const userData = JSON.parse(
-            localStorage.getItem("hemilab_userdata") || "{}",
-          );
-
-          // Total sessions
-          document.getElementById("totalSessions").textContent =
-            journals.length;
-
-          // Total time
-          const totalMinutes = journals.reduce((sum, entry) => {
-            return sum + Math.floor((entry.sessionDuration || 0) / 60);
-          }, 0);
-          document.getElementById("totalTime").textContent = totalMinutes + "m";
-
-          // Favorite focus level
-          const focusCount = {};
-          journals.forEach((entry) => {
-            if (entry.focusLevel) {
-              focusCount[entry.focusLevel] =
-                (focusCount[entry.focusLevel] || 0) + 1;
-            }
-          });
-          const favoriteLevel = Object.keys(focusCount).reduce(
-            (a, b) => (focusCount[a] > focusCount[b] ? a : b),
-            "-",
-          );
-          document.getElementById("favoriteLevel").textContent =
-            favoriteLevel !== "-" ? `Focus ${favoriteLevel}` : "-";
-
-          // Contact events
-          document.getElementById("contactEvents").textContent =
-            userData.contactEvents || 0;
-        }
-
-        exportData() {
-          const data = localStorage.getItem("hemilab_journals") || "[]";
-          const blob = new Blob([data], { type: "application/json" });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = "hemilab_journals.json";
-          a.click();
-          URL.revokeObjectURL(url);
-        }
-
-        importData(file) {
-          if (!file) return;
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            try {
-              const data = JSON.parse(e.target.result);
-              if (Array.isArray(data)) {
-                localStorage.setItem("hemilab_journals", JSON.stringify(data));
-                this.updateStats();
-                alert("📥 Journal data imported successfully!");
-              } else {
-                throw new Error("Invalid format");
-              }
-            } catch (err) {
-              alert("Failed to import data: " + err.message);
-            }
-          };
-          reader.readAsText(file);
-        }
-
-        addTrack() {
-          const container = document.getElementById("composerTracks");
-          const div = document.createElement("div");
-          div.className = "track";
-          div.innerHTML = `
-                    <input type="number" class="track-base" placeholder="Base" value="150" min="40" max="1000">
-                    <input type="number" class="track-beat" placeholder="Beat" value="4">
-                    <input type="number" class="track-vol" placeholder="Vol" value="30">
-                `;
-          container.appendChild(div);
-
-          const index = container.querySelectorAll(".track").length - 1;
-          const baseInput = div.querySelector(".track-base");
-          const beatInput = div.querySelector(".track-beat");
-          const volInput = div.querySelector(".track-vol");
-
-          const update = () => {
-            const eng = this.extraEngines[index];
-            if (eng) {
-              eng.update(
-                parseFloat(baseInput.value),
-                parseFloat(beatInput.value),
-              );
-            }
-          };
-          const updateVol = () => {
-            const eng = this.extraEngines[index];
-            if (eng) {
-              eng.setVolume(parseFloat(volInput.value) / 100);
-            }
-          };
-
-          baseInput.addEventListener("input", update);
-          beatInput.addEventListener("input", update);
-          volInput.addEventListener("input", updateVol);
-
-          if (this.isPlaying) {
-            const eng = new BinauralEngine(
-              this.audioContext,
-              this.audioContext.createGain(),
-              {},
-              document.getElementById("filterType").value,
-              parseFloat(document.getElementById("filterFreq").value),
-            );
-            eng.gainNode.connect(this.gainNode);
-            eng.start(
-              parseFloat(baseInput.value),
-              parseFloat(beatInput.value),
-              parseFloat(volInput.value) / 100,
-              document.getElementById("waveType").value,
-            );
-            this.extraEngines.push(eng);
-          }
-        }
-
-        startFrequencyProgram() {
-          this.stopFrequencyProgram();
-          const lines = document
-            .getElementById("freqProgram")
-            .value.split(/\n+/)
-            .map((l) => l.trim())
-            .filter(Boolean);
-          let offset = 0;
-          lines.forEach((line) => {
-            const [dur, base, beat] = line.split(/\s+/).map(parseFloat);
-            if (!dur || !base || !beat) return;
-            const t = setTimeout(() => {
-              document.getElementById("baseFreq").value = base;
-              document.getElementById("beatFreq").value = beat;
-              this.updateFrequencies();
-            }, offset * 1000);
-            this.programTimers.push(t);
-            offset += dur;
-          });
-        }
-
-        stopFrequencyProgram() {
-          this.programTimers.forEach((t) => clearTimeout(t));
-          this.programTimers = [];
-        }
-
-        bookmarkSettings(slot) {
-          const settings = {
-            baseFreq: document.getElementById("baseFreq").value,
-            beatFreq: document.getElementById("beatFreq").value,
-            waveType: document.getElementById("waveType").value,
-            volume: document.getElementById("volume").value,
-            phaseShift: document.getElementById("phaseShift").value,
-            sessionDuration: document.getElementById("sessionDuration").value,
-            mode528: document.getElementById("mode528").checked,
-            mode528Freq: document.getElementById("mode528Slider").value,
-            isochronicMode: document.getElementById("isochronicMode").checked,
-            deepBassMode: document.getElementById("deepBassMode").checked,
-            driftMode: document.getElementById("driftMode").checked,
-            driftWaveform: document.getElementById("driftWaveform").value,
-            entropyMode: document.getElementById("entropyMode").checked,
-            rebalMode: document.getElementById("rebalMode").checked,
-            breathCoachMode: document.getElementById("breathCoachMode").checked,
-            breathPattern: document.getElementById("breathPattern").value,
-            affirmationMode: document.getElementById("affirmationMode").checked,
-            eegFeedback: document.getElementById("eegFeedback").checked,
-          };
-        localStorage.setItem(
-          `hemilab_bookmark_${slot}`,
-          JSON.stringify(settings),
-        );
-        const btn = document.querySelector(`.bookmark-btn[data-slot="${slot}"]`);
-        if (btn) btn.classList.add("active");
-        alert(`🔖 Settings saved to Slot ${slot}!`);
+    <!-- ============ journal ============ -->
+    <section class="card journal" aria-labelledby="h-journal">
+      <h2 class="card-h" id="h-journal"><i aria-hidden="true"></i>Session journal<small>private · stays in this browser</small></h2>
+      <div class="jgrid">
+        <div>
+          <div class="moods">
+            <label>Focus level<select id="jFocus"></select></label>
+            <label>Mood before<input type="number" id="jBefore" min="1" max="10" placeholder="1–10" inputmode="numeric"></label>
+            <label>Mood after<input type="number" id="jAfter" min="1" max="10" placeholder="1–10" inputmode="numeric"></label>
+          </div>
+          <label class="jfield" style="margin-top:12px">What happened?<textarea id="jText" placeholder="Images, sensations, insights, messages, or just how deep it went…"></textarea></label>
+          <label class="check"><input type="checkbox" id="jContact"><span>I experienced contact (a presence, voice, guide or message). This counts toward your contact tally.</span></label>
+          <div class="jbtns">
+            <button type="button" class="btn btn-honey" id="saveEntry">Save entry</button>
+            <button type="button" class="btn btn-ghost" id="analyzeText">Keyword scan</button>
+            <span class="hint" id="jDur" style="align-self:center"></span>
+          </div>
+          <div class="ai-out" id="aiOut" hidden></div>
+        </div>
+        <div>
+          <div class="stats">
+            <div class="stat"><b id="stSessions">0</b><small>Sessions</small></div>
+            <div class="stat"><b id="stTime">0m</b><small>Time in</small></div>
+            <div class="stat"><b id="stFav">–</b><small>Favorite level</small></div>
+            <div class="stat"><b id="stLift">–</b><small>Avg mood lift</small></div>
+            <div class="stat"><b id="stContact">0</b><small>Contact reports</small></div>
+          </div>
+          <div class="jbtns">
+            <button type="button" class="btn btn-ghost sm" id="analyzeBtn">Patterns</button>
+            <button type="button" class="btn btn-line sm" id="exportBtn">Export</button>
+            <label class="btn btn-line sm" for="importFile">Import</label>
+            <input type="file" id="importFile" accept="application/json,.json" hidden>
+          </div>
+          <div class="entries" id="entries"></div>
+        </div>
+      </div>
+    </section>
+
+    <details class="card guide">
+      <summary>How to use Hemi-Lab</summary>
+      <div class="guide-cols">
+        <div><h4>Before you start</h4><ul><li>Wear headphones. Binaural beats need one tone per ear.</li><li>Find a quiet, comfortable place to lie back.</li><li>Set the volume low. It should be barely there.</li><li>Set an intention for the session.</li></ul></div>
+        <div><h4>The Focus levels</h4><p>The presets borrow the Monroe Institute's map: <b>10</b> body asleep and mind awake, <b>12</b> expanded awareness, <b>15</b> no-time, <b>21</b> the bridge to other energy systems, and <b>23+</b> the contact states. Start at 10 and work your way up over many sessions.</p></div>
+        <div><h4>After</h4><ul><li>Lie still for a minute before you sit up.</li><li>Journal right away, because details fade fast.</li><li>Check Patterns now and then to see which levels and times of day work best for you.</li></ul></div>
+        <div class="warn"><h4>Please don't use it if…</h4><p>…you're driving or operating anything, or you have epilepsy or a seizure disorder (talk to your doctor first). If you feel dizzy or uneasy, end the session, take off the headphones and breathe.</p></div>
+      </div>
+    </details>
+
+    <footer>
+      <span>© <span id="yr"></span> Quantum Minds United · <a href="https://github.com/meistro57/Hemi-Lab_Ultra" target="_blank" rel="noopener noreferrer">Hemi-Lab Ultra on GitHub</a></span>
+      <span><kbd>Ctrl</kbd>+<kbd>Space</kbd> start / end · <kbd>Ctrl</kbd>+<kbd>J</kbd> journal</span>
+    </footer>
+  </div>
+
+  <dialog id="patterns" aria-labelledby="pat-h">
+    <div class="dlg-h" id="pat-h">Patterns in your journal<button type="button" class="btn btn-line sm" data-close>Close</button></div>
+    <div class="dlg-b" id="patBody"></div>
+  </dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+  (() => {
+    'use strict';
+    const $ = (id) => document.getElementById(id);
+    const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const fmtHz = (v) => `${(+v).toFixed(v % 1 ? 1 : 0)} Hz`;
+    const mmss = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+    const store = {
+      get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (_) { return d; } },
+      set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) { toast('Couldn’t save. Browser storage is full or blocked'); } }
+    };
+    let tT; function toast(msg, ms = 2600) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(tT); tT = setTimeout(() => t.classList.remove('show'), ms); }
+
+    // ===================================================================
+    //  presets
+    // ===================================================================
+    const FOCUS = {
+      '10':  { name: 'Focus 10',  sub: 'Body asleep',  base: 100, beat: 7.5, desc: '<b>Mind awake, body asleep.</b> Low theta. The doorway state, and the place to start.' },
+      '12':  { name: 'Focus 12',  sub: 'Expanded',     base: 110, beat: 9,   desc: '<b>Expanded awareness.</b> Alpha. Perception widens beyond the body.' },
+      '15':  { name: 'Focus 15',  sub: 'No-time',      base: 80,  beat: 1.5, desc: '<b>The state of no time.</b> Delta. Deep stillness, good for manifestation work.' },
+      '21':  { name: 'Focus 21',  sub: 'The bridge',   base: 90,  beat: 4,   desc: '<b>The bridge to other energy systems.</b> Theta/delta edge.' },
+      '23+': { name: 'Focus 23+', sub: 'Contact',      base: 70,  beat: 2.5, desc: '<b>The contact states.</b> Deep delta. Go here after plenty of time at 10 to 21.' },
+      'custom': { name: 'Custom', sub: 'Your own',     base: null, beat: null, desc: '<b>Your own settings.</b> Move the sliders and this becomes your session.' }
+    };
+    const band = (b) => b < 4 ? ['Delta', 'deep sleep, healing, the deepest meditation'] : b < 8 ? ['Theta', 'dreamlike, hypnagogic, deep meditation'] : b < 13 ? ['Alpha', 'relaxed, calm, lightly inward'] : b < 30 ? ['Beta', 'alert, focused, active thinking'] : ['Gamma', 'peak focus, high-level integration'];
+    const BREATH = {
+      box: [['Breathe in', 4000, 1], ['Hold', 4000, 1], ['Breathe out', 4000, 0], ['Hold', 4000, 0]],
+      '478': [['Breathe in', 4000, 1], ['Hold', 7000, 1], ['Breathe out', 8000, 0]],
+      coherent: [['Breathe in', 5500, 1], ['Breathe out', 5500, 0]],
+      wimhof: [['Breathe in', 2000, 1], ['Let go', 2000, 0]]
+    };
+    const DEFAULT_AFFIRMATIONS = ['I am more than my physical body.', 'I am calm, open and safe.', 'Every breath takes me deeper.', 'I welcome what I need to know.', 'I return with clarity and peace.'];
+
+    // ===================================================================
+    //  state
+    // ===================================================================
+    const S = {
+      ctx: null, master: null, limiter: null, engine: null, splitter: null, anL: null, anR: null,
+      bass: null, layers: [], playing: false, startedAt: 0, target: 15 * 60, timer: null,
+      focus: '10', lastSession: store.get('hemilab_last_session', null),
+      breathTimer: null, breathPhase: 0, breathLevel: 0.5, breathTarget: 0.5, breathT0: 0, breathDur: 1,
+      affirmTimer: null, entropyTimer: null, entropyOffset: { base: 0, beat: 0 },
+      programTimers: [], program: null, eeg: { ws: null, on: false, adj: { base: 0, beat: 0, vol: null } }
+    };
+
+    // ===================================================================
+    //  UI: focus buttons
+    // ===================================================================
+    $('focusGrid').innerHTML = Object.entries(FOCUS).map(([k, f]) =>
+      `<button type="button" class="focus" data-focus="${k}" aria-pressed="false"><b>${f.name}</b><small>${f.sub}</small>${f.beat ? `<span>${f.beat} Hz</span>` : ''}</button>`).join('');
+    $('jFocus').innerHTML = '<option value="">Choose…</option>' + Object.entries(FOCUS).map(([k, f]) => `<option value="${k}">${f.name} · ${f.sub}</option>`).join('');
+
+    function selectFocus(key, applyPreset = true) {
+      if (!FOCUS[key]) return;
+      S.focus = key;
+      document.querySelectorAll('.focus').forEach((b) => b.setAttribute('aria-pressed', b.dataset.focus === key));
+      $('focusDesc').innerHTML = FOCUS[key].desc;
+      $('roFocus').textContent = FOCUS[key].name;
+      if (applyPreset && FOCUS[key].base) {
+        $('baseFreq').value = FOCUS[key].base;
+        $('beatFreq').value = FOCUS[key].beat;
+        onFreqInput(1.5);
       }
+    }
+    $('focusGrid').addEventListener('click', (e) => { const b = e.target.closest('[data-focus]'); if (b) selectFocus(b.dataset.focus); });
 
-        initializeBookmarks() {
-          document.querySelectorAll(".bookmark-btn").forEach((btn) => {
-            const slot = btn.dataset.slot;
-            if (localStorage.getItem(`hemilab_bookmark_${slot}`)) {
-              btn.classList.add("active");
-            }
-            btn.addEventListener("click", () => {
-              this.bookmarkSettings(slot);
-            });
-          });
-        }
-
-        analyzeJournalAI() {
-          const text = document.getElementById("reflection").value;
-          if (!text.trim()) {
-            alert("Please add reflection text first.");
-            return;
-          }
-          fetch("/api/analyze", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text }),
-          })
-            .then((r) => r.json())
-            .then((d) => alert("🤖 " + d.summary))
-            .catch(() => alert("AI analysis unavailable"));
-        }
-
-        // Advanced features for future phases
-        initializeContactMode() {
-          // Probability-based contact event triggers
-          if (
-            this.currentFocusLevel === "21" ||
-            this.currentFocusLevel === "23+"
-          ) {
-            const contactProbability = Math.random();
-            if (contactProbability > 0.85 && this.isPlaying) {
-              setTimeout(
-                () => {
-                  this.triggerContactEvent();
-                },
-                Math.random() * 300000 + 600000,
-              ); // 10-15 minutes into session
-            }
-          }
-        }
-
-        triggerContactEvent() {
-          this.updateSessionStatus("Contact");
-
-          // Subtle audio modification
-          if (this.leftOscillator && this.rightOscillator) {
-            const originalLeft = this.leftOscillator.frequency.value;
-            const originalRight = this.rightOscillator.frequency.value;
-
-            // Brief frequency shift
-            this.leftOscillator.frequency.exponentialRampToValueAtTime(
-              originalLeft * 0.98,
-              this.audioContext.currentTime + 2,
-            );
-            this.rightOscillator.frequency.exponentialRampToValueAtTime(
-              originalRight * 1.02,
-              this.audioContext.currentTime + 2,
-            );
-
-            setTimeout(() => {
-              if (this.leftOscillator && this.rightOscillator) {
-                this.leftOscillator.frequency.exponentialRampToValueAtTime(
-                  originalLeft,
-                  this.audioContext.currentTime + 1,
-                );
-                this.rightOscillator.frequency.exponentialRampToValueAtTime(
-                  originalRight,
-                  this.audioContext.currentTime + 1,
-                );
-              }
-            }, 3000);
-          }
-
-          // Visual contact indicator
-          const orb = document.getElementById("rebalOrb");
-          orb.style.boxShadow = `
-                    0 0 100px rgba(255, 0, 136, 0.8),
-                    inset 0 0 50px rgba(255, 255, 255, 0.3)
-                `;
-
-          setTimeout(() => {
-            orb.style.boxShadow = `
-                        0 0 50px rgba(0, 255, 136, 0.4),
-                        inset 0 0 50px rgba(0, 153, 255, 0.2)
-                    `;
-          }, 5000);
-        }
-
-        // Pattern analysis for future implementation
-        analyzeSessionPatterns() {
-          const journals = JSON.parse(
-            localStorage.getItem("hemilab_journals") || "[]",
-          );
-
-          // Analyze recurring themes, optimal times, mood patterns
-          const patterns = {
-            bestTimes: this.findOptimalSessionTimes(journals),
-            moodCorrelations: this.analyzeMoodPatterns(journals),
-            progressionPath: this.trackFocusProgression(journals),
-          };
-
-          return patterns;
-        }
-
-        findOptimalSessionTimes(journals) {
-          // Analyze when user has best experiences
-          const timeMap = {};
-          journals.forEach((entry) => {
-            const hour = new Date(entry.timestamp).getHours();
-            const improvement =
-              (entry.moodAfter || 5) - (entry.moodBefore || 5);
-            timeMap[hour] = (timeMap[hour] || []).concat(improvement);
-          });
-
-          return Object.keys(timeMap)
-            .map((hour) => ({
-              hour: parseInt(hour),
-              avgImprovement:
-                timeMap[hour].reduce((a, b) => a + b, 0) / timeMap[hour].length,
-            }))
-            .sort((a, b) => b.avgImprovement - a.avgImprovement);
-        }
-
-        analyzeMoodPatterns(journals) {
-          // Track mood improvement patterns by focus level
-          const patterns = {};
-          journals.forEach((entry) => {
-            if (entry.moodBefore && entry.moodAfter && entry.focusLevel) {
-              const level = entry.focusLevel;
-              const improvement = entry.moodAfter - entry.moodBefore;
-              patterns[level] = (patterns[level] || []).concat(improvement);
-            }
-          });
-
-          return patterns;
-        }
-
-        trackFocusProgression(journals) {
-          // See how user progresses through focus levels over time
-          return journals.map((entry) => ({
-            date: entry.timestamp,
-            level: entry.focusLevel,
-            quality: (entry.moodAfter || 5) - (entry.moodBefore || 5),
-          }));
-        }
-
-        formatPatternAnalysis(patterns) {
-          let html = "";
-
-          html += "<h4>Optimal Session Times</h4>";
-          if (patterns.bestTimes.length) {
-            html +=
-              "<ul>" +
-              patterns.bestTimes
-                .slice(0, 3)
-                .map(
-                  (p) =>
-                    `<li>${p.hour}:00 \u2013 Avg Improvement ${p.avgImprovement.toFixed(2)}</li>`,
-                )
-                .join("") +
-              "</ul>";
-          } else {
-            html += "<p>No data yet.</p>";
-          }
-
-          html += "<h4>Mood Improvement by Focus Level</h4>";
-          const levels = Object.keys(patterns.moodCorrelations);
-          if (levels.length) {
-            html += "<ul>";
-            levels.forEach((level) => {
-              const arr = patterns.moodCorrelations[level];
-              const avg = arr.reduce((a, b) => a + b, 0) / arr.length;
-              html += `<li>Focus ${level}: ${avg.toFixed(2)}</li>`;
-            });
-            html += "</ul>";
-          } else {
-            html += "<p>No data yet.</p>";
-          }
-
-          html += "<h4>Progression Path</h4>";
-          if (patterns.progressionPath.length) {
-            html +=
-              "<ul>" +
-              patterns.progressionPath
-                .map(
-                  (p) =>
-                    `<li>${new Date(p.date).toLocaleDateString()}: Focus ${p.level} (${p.quality > 0 ? "+" : ""}${p.quality})</li>`,
-                )
-                .join("") +
-              "</ul>";
-          } else {
-            html += "<p>No data yet.</p>";
-          }
-
-          return html;
-        }
-
-        renderAnalyticsChart() {
-          const ctx = document
-            .getElementById("analyticsChart")
-            .getContext("2d");
-          const journals = JSON.parse(
-            localStorage.getItem("hemilab_journals") || "[]",
-          );
-          const counts = {};
-          journals.forEach((j) => {
-            if (j.focusLevel)
-              counts[j.focusLevel] = (counts[j.focusLevel] || 0) + 1;
-          });
-          new Chart(ctx, {
-            type: "bar",
-            data: {
-              labels: Object.keys(counts),
-              datasets: [
-                {
-                  label: "Sessions",
-                  data: Object.values(counts),
-                  backgroundColor: "#0099ff",
-                },
-              ],
-            },
-            options: {
-              responsive: false,
-              scales: { y: { beginAtZero: true } },
-            },
-          });
-        }
+    // ===================================================================
+    //  audio graph
+    // ===================================================================
+    async function ensureAudio() {
+      if (!S.ctx) {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) throw new Error('This browser has no Web Audio support.');
+        S.ctx = new Ctx({ latencyHint: 'playback' });
+        // master volume → safety limiter → speakers. The limiter keeps stacked layers from clipping (that was the crackle).
+        S.master = S.ctx.createGain(); S.master.gain.value = 0;
+        S.limiter = S.ctx.createDynamicsCompressor();
+        S.limiter.threshold.value = -3; S.limiter.knee.value = 0; S.limiter.ratio.value = 20; S.limiter.attack.value = 0.002; S.limiter.release.value = 0.15;
+        S.master.connect(S.limiter); S.limiter.connect(S.ctx.destination);
+        // scope taps
+        S.splitter = S.ctx.createChannelSplitter(2);
+        S.anL = S.ctx.createAnalyser(); S.anR = S.ctx.createAnalyser();
+        S.anL.fftSize = S.anR.fftSize = 2048;
+        S.master.connect(S.splitter); S.splitter.connect(S.anL, 0); S.splitter.connect(S.anR, 1);
+        // main binaural engine
+        const g = S.ctx.createGain(); g.connect(S.master);
+        S.engine = new BinauralEngine(S.ctx, g, compSettings(), $('filterType').value, +$('filterFreq').value);
       }
+      if (S.ctx.state === 'suspended') await S.ctx.resume();
+    }
+    const compSettings = () => ({ threshold: +$('compThreshold').value, ratio: +$('compRatio').value, attack: +$('compAttack').value, release: +$('compRelease').value });
+    const masterLevel = () => (S.eeg.on && S.eeg.adj.vol != null ? S.eeg.adj.vol : +$('volume').value / 100) * 0.8;
+    function rampMaster(v, t) {
+      if (!S.master) return;
+      const p = S.master.gain, now = S.ctx.currentTime;
+      p.cancelScheduledValues(now); p.setValueAtTime(p.value, now); p.linearRampToValueAtTime(v, now + t);
+    }
 
-      function attachHelpTooltip(el, text) {
-        const tip = document.createElement("div");
-        tip.className = "help-tooltip";
-        tip.textContent = text;
-        document.body.appendChild(tip);
-        el.addEventListener("mouseenter", () => {
-          const r = el.getBoundingClientRect();
-          tip.style.left = `${r.left + window.pageXOffset}px`;
-          tip.style.top = `${r.bottom + 8 + window.pageYOffset}px`;
-          tip.style.display = "block";
-        });
-        el.addEventListener("mouseleave", () => {
-          tip.style.display = "none";
-        });
+    /** The frequencies actually playing: sliders + entropy wander + EEG nudges, kept in range. */
+    function effective() {
+      let base = +$('baseFreq').value + S.entropyOffset.base;
+      let beat = +$('beatFreq').value + S.entropyOffset.beat;
+      if (S.eeg.on) { base += S.eeg.adj.base; beat += S.eeg.adj.beat; }
+      return { base: clamp(base, 20, 1500), beat: clamp(beat, 0.3, 45) };
+    }
+    function applyAudio(glide = 0.08) {
+      const { base, beat } = effective();
+      showReadouts(base, beat);
+      if (!S.playing) return;
+      if (S.engine.isDrifting) startDrift(); // drift re-centres on the new beat
+      else S.engine.update(base, beat, glide);
+      if (S.engine.isochronicOsc) S.engine.setIsochronicRate(beat);
+      if (S.bass) S.bass.update(+$('bassFreq').value, beat, glide);
+    }
+    function showReadouts(base, beat) {
+      $('roL').textContent = fmtHz(base);
+      $('roR').textContent = fmtHz(base + beat);
+      $('roBeat').textContent = fmtHz(beat);
+      const [name, what] = band(beat);
+      $('roBand').textContent = name;
+      $('bandHint').textContent = `${name}: ${what}.`;
+    }
+
+    // ---- session ----
+    async function startSession() {
+      if (S.playing) return;
+      try {
+        await ensureAudio();
+        const { base, beat } = effective();
+        S.target = +$('duration').value * 60;
+        S.engine.start(base, beat, 1, $('waveType').value);
+        rampMaster(masterLevel(), 4); // 4 s fade in
+        S.playing = true;
+        S.startedAt = Date.now();
+        if ($('isoMode').checked) startIso(); else S.engine.stopIsochronic();
+        if ($('bassMode').checked) startBass(); else stopBass();
+        if ($('driftMode').checked) startDrift();
+        if ($('entropyMode').checked) startEntropy();
+        if ($('breathMode').checked) startBreath();
+        if ($('affirmMode').checked) startAffirmations();
+        startLayers();
+        if (S.program && !S.programTimers.length) runProgram();
+        S.timer = setInterval(tick, 1000); tick();
+        setState('In session', true);
+        $('startBtn').disabled = true; $('stopBtn').disabled = false;
+        $('startBtn').querySelector('span').textContent = 'Session running';
+        if ('wakeLock' in navigator) navigator.wakeLock.request('screen').then((l) => { S.wake = l; }).catch(() => {});
+      } catch (err) {
+        console.error(err);
+        toast(`Couldn’t start audio: ${err.message}`, 5000);
       }
+    }
+    function stopSession(reason = 'Session complete') {
+      if (!S.playing) return;
+      const elapsed = Math.round((Date.now() - S.startedAt) / 1000);
+      S.playing = false;
+      clearInterval(S.timer); S.timer = null;
+      stopProgram(true); S.program = null; stopEntropy(); stopBreath(); stopAffirmations();
+      const fade = 3;
+      rampMaster(0, fade); // 3 s fade out, then tear down
+      setTimeout(() => {
+        if (S.playing) return; // restarted during the fade
+        S.engine.stop(); S.engine.stopIsochronic();
+        stopBass(); stopLayers();
+      }, fade * 1000 + 50);
+      if (S.wake) { S.wake.release().catch(() => {}); S.wake = null; }
+      S.lastSession = { seconds: elapsed, focus: S.focus, endedAt: Date.now() };
+      store.set('hemilab_last_session', S.lastSession);
+      setState(reason, false);
+      $('startBtn').disabled = false; $('stopBtn').disabled = true;
+      $('startBtn').querySelector('span').textContent = 'Begin session';
+      if (FOCUS[S.focus] && S.focus !== 'custom') $('jFocus').value = S.focus;
+      updateJournalDuration();
+      if (elapsed >= 60) setTimeout(() => toast('Welcome back. Take a minute, then jot down what you noticed', 4200), 600);
+    }
+    function tick() {
+      const el = Math.floor((Date.now() - S.startedAt) / 1000);
+      $('timer').textContent = mmss(el);
+      $('progBar').style.width = `${Math.min(100, (el / S.target) * 100)}%`;
+      $('progMeta').textContent = `of ${Math.round(S.target / 60)} min`;
+      if (el >= S.target) stopSession('Session complete');
+    }
+    function setState(text, on) { $('stateText').textContent = text; $('stateDot').classList.toggle('on', on); }
 
-      function initHelpTooltips() {
-        document
-          .querySelectorAll("[data-help]")
-          .forEach((el) => attachHelpTooltip(el, el.dataset.help));
-      }
+    // ---- layers on the main engine ----
+    function startIso() { if (S.playing) S.engine.startIsochronic(effective().beat, +$('isoDepth').value / 100); }
+    function startBass() {
+      stopBass();
+      const g = S.ctx.createGain(); g.connect(S.master);
+      S.bass = new BinauralEngine(S.ctx, g, { threshold: -12, ratio: 4 }, 'lowpass', 200);
+      S.bass.start(+$('bassFreq').value, effective().beat, 0, 'sine');
+      S.bass.setVolume(0.55, 2);
+    }
+    function stopBass() { if (S.bass) { const b = S.bass; S.bass = null; b.setVolume(0, 0.5); setTimeout(() => b.dispose(), 600); } }
+    function startDrift() {
+      if (!S.playing) return;
+      const { base, beat } = effective();
+      S.engine.update(base, undefined, 0.05);
+      S.engine.startDrift(+$('driftPeriod').value, clamp(beat * 0.7, 0.3, 45), clamp(beat * 1.3, 0.3, 45), $('driftWave').value);
+    }
+    function stopDrift() { if (S.engine) { S.engine.stopDrift(); if (S.playing) applyAudio(0.5); } }
+    function startEntropy() {
+      stopEntropy();
+      S.entropyTimer = setInterval(() => {
+        // a bounded random walk that is pulled back toward your settings
+        const b0 = +$('baseFreq').value, t0 = +$('beatFreq').value;
+        S.entropyOffset.base = clamp(S.entropyOffset.base * 0.6 + (Math.random() - 0.5) * 4, -b0 * 0.04, b0 * 0.04);
+        S.entropyOffset.beat = clamp(S.entropyOffset.beat * 0.6 + (Math.random() - 0.5) * t0 * 0.2, -t0 * 0.2, t0 * 0.2);
+        applyAudio(3);
+      }, 6000);
+    }
+    function stopEntropy() { clearInterval(S.entropyTimer); S.entropyTimer = null; S.entropyOffset = { base: 0, beat: 0 }; if (S.playing) applyAudio(2); }
 
-      // Initialize the application
-      let app;
+    // ---- composer layers ----
+    let layerSeq = 0;
+    function addLayer(v = { base: 150, beat: 4, vol: 30 }) {
+      const id = ++layerSeq;
+      const d = document.createElement('div');
+      d.className = 'layer'; d.dataset.id = id;
+      d.innerHTML = `<label>Carrier Hz<input type="number" class="lb" min="30" max="1500" step="0.5" value="${v.base}"></label>
+        <label>Beat Hz<input type="number" class="lt" min="0.3" max="45" step="0.1" value="${v.beat}"></label>
+        <label>Level %<input type="number" class="lv" min="0" max="100" value="${v.vol}"></label>
+        <button type="button" class="x" aria-label="Remove layer" title="Remove layer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`;
+      $('layers').appendChild(d);
+      if (S.playing) startLayer(d);
+      return d;
+    }
+    const layerVals = (d) => ({ base: clamp(+d.querySelector('.lb').value || 150, 30, 1500), beat: clamp(+d.querySelector('.lt').value || 4, 0.3, 45), vol: clamp(+d.querySelector('.lv').value || 0, 0, 100) });
+    function startLayer(d) {
+      const v = layerVals(d);
+      const g = S.ctx.createGain(); g.connect(S.master);
+      const eng = new BinauralEngine(S.ctx, g, compSettings(), $('filterType').value, +$('filterFreq').value);
+      eng.start(v.base, v.beat, 0, $('waveType').value);
+      eng.setVolume(v.vol / 100 * 0.6, 2);
+      S.layers.push({ id: d.dataset.id, eng });
+    }
+    function startLayers() { stopLayers(); document.querySelectorAll('#layers .layer').forEach(startLayer); }
+    function stopLayers() { S.layers.forEach((l) => l.eng.dispose()); S.layers = []; }
+    $('addLayer').addEventListener('click', () => addLayer());
+    $('layers').addEventListener('click', (e) => {
+      const x = e.target.closest('.x'); if (!x) return;
+      const d = x.closest('.layer'); const i = S.layers.findIndex((l) => l.id === d.dataset.id);
+      if (i >= 0) { const l = S.layers.splice(i, 1)[0]; l.eng.setVolume(0, 0.3); setTimeout(() => l.eng.dispose(), 400); }
+      d.remove();
+    });
+    $('layers').addEventListener('input', (e) => {
+      const d = e.target.closest('.layer'); if (!d) return;
+      const l = S.layers.find((x) => x.id === d.dataset.id); if (!l) return;
+      const v = layerVals(d);
+      if (e.target.classList.contains('lv')) l.eng.setVolume(v.vol / 100 * 0.6, 0.1);
+      else l.eng.update(v.base, v.beat, 0.1);
+    });
 
-      // Create app instance on DOM ready
-      document.addEventListener("DOMContentLoaded", () => {
-        app = new HemiLabGateway();
-        initHelpTooltips();
-        const themeToggle = document.getElementById("themeToggle");
-          const storedTheme = localStorage.getItem("hemilab_theme") || "dark";
-          if (storedTheme === "light") {
-            document.body.classList.add("light-mode");
-            themeToggle.checked = true;
-          }
-          themeToggle.addEventListener("change", () => {
-            if (themeToggle.checked) {
-              document.body.classList.add("light-mode");
-              localStorage.setItem("hemilab_theme", "light");
-            } else {
-              document.body.classList.remove("light-mode");
-              localStorage.setItem("hemilab_theme", "dark");
-            }
-          });
-      
-        // Add some initial guidance
-        const welcomeMessage = `
-🧠 Welcome to Hemi-Lab Gateway Terminal
-
-Your consciousness exploration platform is ready. Features available:
-
-✅ Binaural Beat Engine - Create custom frequency entrainment
-✅ Focus Level Navigator - Monroe Institute inspired states  
-✅ REBAL Energy Shield - Resonant protection visualization
-✅ Breath Coach - Synchronized breathing guidance
-✅ Session Journal - Track your journey and insights
-✅ Pattern Analysis - Discover your optimal practice times
-✅ Affirmation Layer - Spoken positive cues
-
-🚀 Select a Focus Level and click "Begin Session" to start your exploration.
-
-For best results:
-• Use quality headphones
-• Find a quiet, comfortable space  
-• Set an intention before beginning
-• Journal your experiences after each session
-
-The deeper states (Focus 15, 21, 23+) may produce profound experiences. Trust the process and document everything.
-
-Safe travels, consciousness explorer. ✨
-            `;
-
-        console.log(welcomeMessage);
+    // ---- frequency program ----
+    function parseProgram() {
+      const steps = [];
+      $('program').value.split(/\n+/).forEach((line, i) => {
+        const p = line.trim().split(/[\s,]+/).map(Number);
+        if (!line.trim()) return;
+        if (p.length < 3 || p.some((n) => !isFinite(n)) || p[0] <= 0 || p[1] < 20 || p[1] > 1500 || p[2] < 0.3 || p[2] > 45) throw new Error(`Line ${i + 1} doesn’t look right: “${line.trim()}”`);
+        steps.push({ dur: p[0], base: p[1], beat: p[2] });
       });
-
-      // Activate audio context on first user interaction
-      document.addEventListener(
-        "click",
-        () => {
-          if (app) {
-            app.initializeAudio();
-          }
-        },
-        { once: true },
-      );
-
-      // Add some keyboard shortcuts for advanced users
-      document.addEventListener("keydown", (e) => {
-        if (e.ctrlKey || e.metaKey) {
-          switch (e.key) {
-            case " ":
-              e.preventDefault();
-              if (app && app.isPlaying) {
-                app.stopSession();
-              } else if (app) {
-                app.startSession();
-              }
-              break;
-            case "j":
-              e.preventDefault();
-              document.getElementById("reflection").focus();
-              break;
-          }
-        }
+      if (!steps.length) throw new Error('Add at least one line: seconds, carrier, beat');
+      return steps;
+    }
+    function runProgram() {
+      let steps;
+      try { steps = parseProgram(); } catch (err) { toast(err.message, 4200); return; }
+      stopProgram(true);
+      S.program = steps;
+      if ($('driftMode').checked) { $('driftMode').checked = false; $('driftSub').classList.remove('on'); stopDrift(); toast('Drift paused while the program runs'); }
+      if (!S.playing) { startSession(); return; } // startSession calls runProgram again once audio is up
+      let at = 0;
+      steps.forEach((s, i) => {
+        S.programTimers.push(setTimeout(() => {
+          $('baseFreq').value = s.base; $('beatFreq').value = s.beat;
+          onFreqInput(Math.min(8, s.dur / 4)); // glide into each step
+          S.programStep = { i, t0: Date.now(), s };
+        }, at * 1000));
+        at += s.dur;
       });
+      S.programTimers.push(setInterval(() => {
+        const st = S.programStep; if (!st) return;
+        const left = Math.max(0, st.s.dur - (Date.now() - st.t0) / 1000);
+        $('programStatus').textContent = st.i === steps.length - 1 && left <= 0
+          ? `Program done · holding ${st.s.base} Hz / ${st.s.beat} Hz`
+          : `Step ${st.i + 1} of ${steps.length} · ${st.s.base} Hz carrier, ${st.s.beat} Hz beat · ${mmss(left)} left`;
+      }, 500));
+      const total = steps.reduce((a, s) => a + s.dur, 0);
+      if (total > S.target) toast(`Heads up: the program runs ${Math.round(total / 60)} min but the session is ${Math.round(S.target / 60)} min`, 4500);
+    }
+    function stopProgram(silent) {
+      S.programTimers.forEach((t) => { clearTimeout(t); clearInterval(t); });
+      S.programTimers = []; S.programStep = null;
+      if (!silent) { S.program = null; $('programStatus').textContent = 'Program stopped'; }
+      else if (!S.playing) $('programStatus').textContent = '';
+    }
+    $('runProgram').addEventListener('click', runProgram);
+    $('stopProgram').addEventListener('click', () => stopProgram(false));
 
-      // Easter egg for advanced users
-      let konamiCode = [];
-      const konamiSequence = [
-        "ArrowUp",
-        "ArrowUp",
-        "ArrowDown",
-        "ArrowDown",
-        "ArrowLeft",
-        "ArrowRight",
-        "ArrowLeft",
-        "ArrowRight",
-        "KeyB",
-        "KeyA",
-      ];
+    // ---- breath coach ----
+    function startBreath() {
+      stopBreath();
+      const pat = BREATH[$('breathPattern').value] || BREATH.box;
+      $('breath').classList.add('on');
+      let i = 0;
+      const step = () => {
+        const [label, ms, to] = pat[i % pat.length];
+        $('breathText').textContent = label;
+        const bar = $('breathBar');
+        bar.style.transition = 'none'; bar.style.width = '0%'; void bar.offsetWidth;
+        bar.style.transition = `width ${ms}ms linear`; bar.style.width = '100%';
+        S.breathFrom = S.breathLevel; S.breathTarget = to; S.breathT0 = performance.now(); S.breathDur = ms;
+        i++;
+        S.breathTimer = setTimeout(step, ms);
+      };
+      step();
+    }
+    function stopBreath() { clearTimeout(S.breathTimer); S.breathTimer = null; $('breath').classList.remove('on'); S.breathTarget = 0.5; S.breathFrom = S.breathLevel; S.breathT0 = performance.now(); S.breathDur = 1500; }
 
-      document.addEventListener("keydown", (e) => {
-        konamiCode.push(e.code);
-        if (konamiCode.length > 10) konamiCode.shift();
+    // ---- affirmations ----
+    function affirmations() { const list = $('affirmText').value.split('\n').map((s) => s.trim()).filter(Boolean); return list.length ? list : DEFAULT_AFFIRMATIONS; }
+    function speak() {
+      if (!('speechSynthesis' in window) || !S.playing) return;
+      const list = affirmations();
+      const u = new SpeechSynthesisUtterance(list[Math.floor(Math.random() * list.length)]);
+      u.rate = 0.82; u.pitch = 0.95; u.volume = 0.7;
+      speechSynthesis.cancel(); speechSynthesis.speak(u);
+    }
+    function startAffirmations() {
+      stopAffirmations();
+      if (!('speechSynthesis' in window)) { toast('This browser can’t speak affirmations'); return; }
+      S.affirmTimer = setTimeout(function loop() { speak(); S.affirmTimer = setTimeout(loop, 120000 + Math.random() * 60000); }, 20000);
+    }
+    function stopAffirmations() { clearTimeout(S.affirmTimer); S.affirmTimer = null; if ('speechSynthesis' in window) speechSynthesis.cancel(); }
 
-        if (JSON.stringify(konamiCode) === JSON.stringify(konamiSequence)) {
-          alert(
-            '🛸 Advanced Contact Protocols Unlocked\n\nHidden frequencies now available in Focus 27+\nQuantum entanglement mode enabled\nRemote viewing assistance activated\n\n"The Explorer becomes the Explored" - TMI',
-          );
-          konamiCode = [];
+    // ===================================================================
+    //  control wiring
+    // ===================================================================
+    function onFreqInput(glide = 0.08) {
+      $('baseOut').textContent = fmtHz($('baseFreq').value);
+      $('beatOut').textContent = fmtHz($('beatFreq').value);
+      document.querySelectorAll('[data-base]').forEach((c) => c.setAttribute('aria-pressed', Math.abs(+c.dataset.base - +$('baseFreq').value) < 0.01));
+      applyAudio(glide);
+    }
+    ['baseFreq', 'beatFreq'].forEach((id) => $(id).addEventListener('input', () => {
+      const f = FOCUS[S.focus];
+      if (S.focus !== 'custom' && f && (+$('baseFreq').value !== f.base || +$('beatFreq').value !== f.beat)) selectFocus('custom', false);
+      onFreqInput();
+    }));
+    document.querySelector('.chips').addEventListener('click', (e) => {
+      const c = e.target.closest('[data-base]'); if (!c) return;
+      $('baseFreq').value = c.dataset.base;
+      if (S.focus !== 'custom') selectFocus('custom', false);
+      onFreqInput(1);
+    });
+    $('volume').addEventListener('input', () => { $('volOut').textContent = `${$('volume').value}%`; if (S.playing) rampMaster(masterLevel(), 0.08); });
+    $('duration').addEventListener('input', () => { $('durOut').textContent = `${$('duration').value} min`; S.target = +$('duration').value * 60; if (!S.playing) $('progMeta').textContent = `of ${$('duration').value} min`; });
+    $('waveType').addEventListener('change', () => { if (S.engine) { S.engine.setWaveType($('waveType').value); S.layers.forEach((l) => l.eng.setWaveType($('waveType').value)); } });
+    $('filterType').addEventListener('change', () => { $('filterFreq').disabled = $('filterType').value === 'none'; if (S.engine) [S.engine, ...S.layers.map((l) => l.eng)].forEach((e) => e.setFilter($('filterType').value, +$('filterFreq').value)); });
+    $('filterFreq').addEventListener('input', () => { $('filterOut').textContent = `${$('filterFreq').value} Hz`; if (S.engine && $('filterType').value !== 'none') [S.engine, ...S.layers.map((l) => l.eng)].forEach((e) => e.setFilter($('filterType').value, +$('filterFreq').value)); });
+    [['compThreshold', 'thrOut', (v) => `${v} dB`], ['compRatio', 'ratioOut', (v) => `${v}:1`], ['compAttack', 'atkOut', (v) => `${v} s`], ['compRelease', 'relOut', (v) => `${v} s`]].forEach(([id, out, f]) =>
+      $(id).addEventListener('input', () => { $(out).textContent = f($(id).value); if (S.engine) [S.engine, ...S.layers.map((l) => l.eng)].forEach((e) => e.setCompressorSettings(compSettings())); }));
+
+    const sub = (chk, subId) => $(subId).classList.toggle('on', $(chk).checked);
+    $('isoMode').addEventListener('change', () => { sub('isoMode', 'isoSub'); if (!S.playing) return; $('isoMode').checked ? startIso() : S.engine.stopIsochronic(); });
+    $('isoDepth').addEventListener('input', () => { $('isoOut').textContent = `${$('isoDepth').value}%`; if (S.engine && S.engine.isochronicOsc) S.engine.setIsochronicDepth(+$('isoDepth').value / 100); });
+    $('bassMode').addEventListener('change', () => { sub('bassMode', 'bassSub'); if (!S.playing) return; $('bassMode').checked ? startBass() : stopBass(); });
+    $('bassFreq').addEventListener('input', () => { $('bassOut').textContent = `${$('bassFreq').value} Hz`; if (S.bass) S.bass.update(+$('bassFreq').value, effective().beat, 0.2); });
+    $('driftMode').addEventListener('change', () => {
+      sub('driftMode', 'driftSub');
+      if ($('driftMode').checked && $('entropyMode').checked) { $('entropyMode').checked = false; stopEntropy(); toast('Entropy wander turned off. Drift and wander would fight each other'); }
+      if ($('driftMode').checked && S.programTimers.length) { stopProgram(false); toast('Program stopped so Drift can take over'); }
+      if (!S.playing) return; $('driftMode').checked ? startDrift() : stopDrift();
+    });
+    ['driftWave', 'driftPeriod'].forEach((id) => $(id).addEventListener('input', () => { $('driftOut').textContent = `${$('driftPeriod').value} s`; if (S.playing && $('driftMode').checked) startDrift(); }));
+    $('entropyMode').addEventListener('change', () => {
+      if ($('entropyMode').checked && $('driftMode').checked) { $('driftMode').checked = false; sub('driftMode', 'driftSub'); stopDrift(); toast('Drift turned off. Drift and wander would fight each other'); }
+      if (!S.playing) return; $('entropyMode').checked ? startEntropy() : stopEntropy();
+    });
+    $('breathMode').addEventListener('change', () => { sub('breathMode', 'breathSub'); if (S.playing) ($('breathMode').checked ? startBreath() : stopBreath()); });
+    $('breathPattern').addEventListener('change', () => { if (S.playing && $('breathMode').checked) startBreath(); });
+    $('affirmMode').addEventListener('change', () => { sub('affirmMode', 'affirmSub'); if (S.playing) ($('affirmMode').checked ? (speak(), startAffirmations()) : stopAffirmations()); });
+    $('affirmText').addEventListener('change', () => store.set('hemilab_affirmations', $('affirmText').value));
+    $('startBtn').addEventListener('click', startSession);
+    $('stopBtn').addEventListener('click', () => stopSession('Ended early'));
+
+    // ===================================================================
+    //  EEG + group (WebSocket to server.js)
+    // ===================================================================
+    function net(state, text) { const d = $('netDot'); d.className = 'dot ' + state; $('netText').textContent = text; }
+    function connectWS() {
+      if (S.eeg.ws && S.eeg.ws.readyState <= 1) return S.eeg.ws;
+      if (!/^https?:/.test(location.protocol)) { net('err', 'open via node server.js'); return null; }
+      const url = location.origin.replace(/^http/, 'ws');
+      net('wait', 'connecting…');
+      let ws;
+      try { ws = new WebSocket(url); } catch (_) { net('err', 'can’t connect'); return null; }
+      S.eeg.ws = ws;
+      ws.addEventListener('open', () => net('ok', 'connected'));
+      ws.addEventListener('close', () => { net('err', 'disconnected'); if (S.eeg.ws === ws) S.eeg.ws = null; });
+      ws.addEventListener('error', () => net('err', 'no server here'));
+      ws.addEventListener('message', (e) => onEEG(e.data));
+      return ws;
+    }
+    function onEEG(raw) {
+      if (!S.eeg.on) return;
+      let data; try { data = JSON.parse(raw); } catch (_) { return; }
+      let a = 0, b = 0, t = 0, d = 0, n = 0;
+      Object.values(data).forEach((ch) => { if (!ch || typeof ch !== 'object') return; a += ch.alpha || 0; b += ch.beta || 0; t += ch.theta || 0; d += ch.delta || 0; n++; });
+      if (!n) return;
+      a /= n; b /= n; t /= n; d /= n;
+      const ab = b ? a / b : 1, td = d ? t / d : 1;
+      S.eeg.adj = { base: clamp((ab - 1) * 2, -10, 10), beat: clamp(td - 1, -3, 3), vol: clamp(0.5 + (a - b) / (a + b + t + d + 1e-4), 0.05, 1) };
+      if (S.playing) { applyAudio(1); rampMaster(masterLevel(), 1); }
+    }
+    $('eegMode').addEventListener('change', () => {
+      S.eeg.on = $('eegMode').checked;
+      if (S.eeg.on) connectWS();
+      else { S.eeg.adj = { base: 0, beat: 0, vol: null }; if (S.playing) { applyAudio(1); rampMaster(masterLevel(), 1); } }
+    });
+    $('joinGroup').addEventListener('click', () => {
+      const id = $('groupId').value.trim(); if (!id) { $('groupId').focus(); return; }
+      const ws = connectWS(); if (!ws) return;
+      const send = () => { ws.send(JSON.stringify({ type: 'join', group: id })); toast(`Joined group “${id}”`); };
+      ws.readyState === 1 ? send() : ws.addEventListener('open', send, { once: true });
+    });
+
+    // ===================================================================
+    //  saved setups (bookmarks)
+    // ===================================================================
+    const FIELDS = ['baseFreq', 'beatFreq', 'waveType', 'volume', 'duration', 'filterType', 'filterFreq', 'isoMode', 'isoDepth', 'bassMode', 'bassFreq', 'driftMode', 'driftWave', 'driftPeriod', 'entropyMode', 'rebalMode', 'breathMode', 'breathPattern', 'affirmMode'];
+    function snapshot() { const o = { focus: S.focus, savedAt: Date.now() }; FIELDS.forEach((f) => { const el = $(f); o[f] = el.type === 'checkbox' ? el.checked : el.value; }); return o; }
+    const LEGACY = { sessionDuration: 'duration', isochronicMode: 'isoMode', deepBassMode: 'bassMode', driftWaveform: 'driftWave', breathCoachMode: 'breathMode', affirmationMode: 'affirmMode' };
+    function restore(o) {
+      o = { ...o }; Object.entries(LEGACY).forEach(([old, now]) => { if (o[old] !== undefined && o[now] === undefined) o[now] = o[old]; }); // setups saved by v1.1
+      FIELDS.forEach((f) => { if (o[f] === undefined || !$(f)) return; const el = $(f); if (el.type === 'checkbox') el.checked = !!o[f]; else el.value = o[f]; });
+      selectFocus(FOCUS[o.focus] ? o.focus : 'custom', false);
+      // fire change handlers so live audio and labels follow
+      ['isoMode', 'bassMode', 'driftMode', 'entropyMode', 'breathMode', 'affirmMode', 'waveType', 'filterType'].forEach((id) => $(id).dispatchEvent(new Event('change')));
+      ['volume', 'duration', 'filterFreq', 'isoDepth', 'bassFreq', 'driftPeriod'].forEach((id) => $(id).dispatchEvent(new Event('input')));
+      onFreqInput(1.5); paintRebal();
+    }
+    function renderSlots() {
+      const html = [];
+      for (let i = 1; i <= 6; i++) {
+        const s = store.get(`hemilab_bookmark_${i}`, null);
+        if (s && s.baseFreq) {
+          const f = FOCUS[s.focus] ? FOCUS[s.focus].name : 'Custom';
+          html.push(`<div class="slot full"><b>${esc(s.name || f)}</b><small>${esc(s.baseFreq)} Hz · ${esc(s.beatFreq)} Hz beat</small>
+            <div class="acts"><button type="button" data-load="${i}">Load</button><button type="button" data-save="${i}" title="Overwrite with current settings">Save</button><button type="button" class="del" data-del="${i}" aria-label="Clear slot ${i}" title="Clear">×</button></div></div>`);
+        } else {
+          html.push(`<div class="slot"><b style="color:var(--muted)">Slot ${i}</b><small>empty</small><div class="acts"><button type="button" data-save="${i}">Save current</button></div></div>`);
         }
-      });
-    </script>
-  </body>
+      }
+      $('slots').innerHTML = html.join('');
+    }
+    $('slots').addEventListener('click', (e) => {
+      const b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.save) {
+        const prev = store.get(`hemilab_bookmark_${b.dataset.save}`, null);
+        const name = prompt('Name this setup:', (prev && prev.name) || (FOCUS[S.focus] ? FOCUS[S.focus].name : 'My setup'));
+        if (name === null) return;
+        store.set(`hemilab_bookmark_${b.dataset.save}`, { ...snapshot(), name: name.trim().slice(0, 40) || 'My setup' });
+        renderSlots(); toast('Setup saved');
+      } else if (b.dataset.load) {
+        const s = store.get(`hemilab_bookmark_${b.dataset.load}`, null); if (!s) return;
+        restore(s); toast(`Loaded “${s.name || 'setup'}”`);
+      } else if (b.dataset.del) {
+        if (!confirm('Clear this saved setup?')) return;
+        try { localStorage.removeItem(`hemilab_bookmark_${b.dataset.del}`); } catch (_) {}
+        renderSlots();
+      }
+    });
+
+    // ===================================================================
+    //  journal
+    // ===================================================================
+    const journals = () => store.get('hemilab_journals', []);
+    function updateJournalDuration() {
+      const l = S.lastSession;
+      $('jDur').textContent = l && l.seconds ? `Will log your last session: ${Math.max(1, Math.round(l.seconds / 60))} min${l.endedAt ? ', ' + new Date(l.endedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : ''}` : '';
+    }
+    $('saveEntry').addEventListener('click', () => {
+      const focus = $('jFocus').value, text = $('jText').value.trim();
+      if (!focus) { toast('Pick the Focus level you used'); $('jFocus').focus(); return; }
+      if (!text) { toast('Write a line or two about the session first'); $('jText').focus(); return; }
+      const mood = (id) => { const v = parseInt($(id).value, 10); return v >= 1 && v <= 10 ? v : null; };
+      const entry = { timestamp: new Date().toISOString(), focusLevel: focus, moodBefore: mood('jBefore'), moodAfter: mood('jAfter'), reflection: text, contact: $('jContact').checked, sessionDuration: S.lastSession && !S.lastSession.logged ? S.lastSession.seconds : 0 };
+      const list = journals(); list.push(entry); store.set('hemilab_journals', list);
+      if (S.lastSession) { S.lastSession.logged = true; store.set('hemilab_last_session', S.lastSession); }
+      ['jBefore', 'jAfter', 'jText'].forEach((id) => { $(id).value = ''; }); $('jContact').checked = false; $('aiOut').hidden = true;
+      updateJournalDuration(); renderJournal(); toast('Entry saved to your journal');
+    });
+    $('analyzeText').addEventListener('click', async () => {
+      const text = $('jText').value.trim(); const out = $('aiOut');
+      if (!text) { toast('Write something first'); return; }
+      out.hidden = false; out.textContent = 'Scanning…';
+      try {
+        const r = await fetch('/api/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) });
+        if (!r.ok) throw new Error();
+        const d = await r.json(); out.textContent = d.summary || 'No keywords found.';
+      } catch (_) {
+        // no server: do the same keyword count right here
+        const stop = new Set('the a an and or but of to in on at for with i me my was were is it this that as be been had have felt feel like just so then there from into very'.split(' '));
+        const f = {}; text.toLowerCase().replace(/[^a-z0-9\s']/g, ' ').split(/\s+/).filter((w) => w.length > 2 && !stop.has(w)).forEach((w) => { f[w] = (f[w] || 0) + 1; });
+        const top = Object.entries(f).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([w, n]) => n > 1 ? `${w} ×${n}` : w);
+        out.textContent = top.length ? `Words that stand out: ${top.join(', ')}` : 'Not enough text to scan yet.';
+      }
+    });
+    function renderJournal() {
+      const list = journals();
+      const secs = list.reduce((a, j) => a + (j.sessionDuration || 0), 0);
+      const counts = {}; list.forEach((j) => { if (j.focusLevel) counts[j.focusLevel] = (counts[j.focusLevel] || 0) + 1; });
+      const fav = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0];
+      const lifts = list.filter((j) => j.moodBefore && j.moodAfter).map((j) => j.moodAfter - j.moodBefore);
+      $('stSessions').textContent = list.length;
+      $('stTime').textContent = secs >= 3600 ? `${(secs / 3600).toFixed(1)}h` : `${Math.round(secs / 60)}m`;
+      $('stFav').textContent = fav ? (FOCUS[fav] ? FOCUS[fav].name.replace('Focus ', 'F') : fav) : '–';
+      $('stLift').textContent = lifts.length ? `${(lifts.reduce((a, b) => a + b, 0) / lifts.length >= 0 ? '+' : '')}${(lifts.reduce((a, b) => a + b, 0) / lifts.length).toFixed(1)}` : '–';
+      $('stContact').textContent = list.filter((j) => j.contact).length;
+      const recent = list.map((j, i) => ({ ...j, i })).reverse().slice(0, 30);
+      $('entries').innerHTML = recent.length ? recent.map((j) => {
+        const f = FOCUS[j.focusLevel] ? FOCUS[j.focusLevel].name : (j.focusLevel ? `Focus ${j.focusLevel}` : '');
+        const m = j.moodBefore && j.moodAfter ? `mood ${j.moodBefore}→${j.moodAfter}` : '';
+        return `<article class="entry"><header><b>${new Date(j.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</b>${f ? `<span>${esc(f)}</span>` : ''}${m ? `<span>${m}</span>` : ''}${j.sessionDuration ? `<span>${Math.max(1, Math.round(j.sessionDuration / 60))} min</span>` : ''}${j.contact ? '<span class="tag">contact</span>' : ''}<button type="button" data-del-entry="${j.i}" aria-label="Delete entry" title="Delete entry">×</button></header><p>${esc(j.reflection)}</p></article>`;
+      }).join('') : '<div class="empty">Your entries will show up here after your first session.</div>';
+    }
+    $('entries').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-del-entry]'); if (!b) return;
+      if (!confirm('Delete this journal entry? This can’t be undone.')) return;
+      const list = journals(); list.splice(+b.dataset.delEntry, 1); store.set('hemilab_journals', list); renderJournal();
+    });
+
+    // ---- patterns ----
+    function barRows(rows, max, neg) {
+      return `<div class="bars">${rows.map(([label, v, txt]) => `<div class="bar-row"><span>${esc(label)}</span><div class="b${neg && v < 0 ? ' neg' : ''}"><span style="width:${max ? Math.max(4, Math.abs(v) / max * 100) : 0}%"></span></div><em>${esc(txt ?? v)}</em></div>`).join('')}</div>`;
+    }
+    $('analyzeBtn').addEventListener('click', () => {
+      const list = journals(); let h = '';
+      if (!list.length) h = '<div class="empty">No entries yet. Patterns appear once you’ve journaled a few sessions.</div>';
+      else {
+        const counts = {}; list.forEach((j) => { if (j.focusLevel) counts[j.focusLevel] = (counts[j.focusLevel] || 0) + 1; });
+        const cRows = Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([k, n]) => [FOCUS[k] ? FOCUS[k].name : k, n, `${n}`]);
+        h += `<h4>Sessions per level</h4>${barRows(cRows, Math.max(...cRows.map((r) => r[1])))}`;
+        const lift = {}; list.forEach((j) => { if (j.moodBefore && j.moodAfter && j.focusLevel) (lift[j.focusLevel] = lift[j.focusLevel] || []).push(j.moodAfter - j.moodBefore); });
+        const lRows = Object.entries(lift).map(([k, a]) => { const v = a.reduce((x, y) => x + y, 0) / a.length; return [FOCUS[k] ? FOCUS[k].name : k, v, `${v >= 0 ? '+' : ''}${v.toFixed(1)}`]; }).sort((a, b) => b[1] - a[1]);
+        h += `<h4>Average mood lift by level</h4>${lRows.length ? barRows(lRows, Math.max(...lRows.map((r) => Math.abs(r[1])), 1), true) : '<p class="hint">Fill in mood before and after to see this.</p>'}`;
+        const slots = { 'Early morning (4–8)': [4, 8], 'Morning (8–12)': [8, 12], 'Afternoon (12–17)': [12, 17], 'Evening (17–21)': [17, 21], 'Night (21–4)': [21, 28] };
+        const tRows = Object.entries(slots).map(([name, [a, b]]) => {
+          const arr = list.filter((j) => { let hr = new Date(j.timestamp).getHours(); if (hr < 4) hr += 24; return hr >= a && hr < b && j.moodBefore && j.moodAfter; }).map((j) => j.moodAfter - j.moodBefore);
+          return arr.length ? [name.split(' (')[0], arr.reduce((x, y) => x + y, 0) / arr.length, `${arr.length}×`] : null;
+        }).filter(Boolean).sort((a, b) => b[1] - a[1]);
+        h += `<h4>Best time of day (by mood lift)</h4>${tRows.length ? barRows(tRows.map((r) => [r[0], r[1], `${r[1] >= 0 ? '+' : ''}${r[1].toFixed(1)} · ${r[2]}`]), Math.max(...tRows.map((r) => Math.abs(r[1])), 1), true) : '<p class="hint">Needs a few entries with moods filled in.</p>'}`;
+        const contacts = list.filter((j) => j.contact);
+        if (contacts.length) { const by = {}; contacts.forEach((j) => { by[j.focusLevel] = (by[j.focusLevel] || 0) + 1; }); h += `<h4>Contact reports</h4><p>${contacts.length} so far: ${Object.entries(by).map(([k, n]) => `${esc(FOCUS[k] ? FOCUS[k].name : k)} (${n})`).join(', ')}.</p>`; }
+        const DEPTH = { '10': 1, '12': 2, '15': 3, '21': 4, '23+': 5, custom: 0.5 };
+        h += `<h4>Your path</h4>${barRows(list.slice(-12).map((j) => [new Date(j.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' }), DEPTH[j.focusLevel] ?? 0.5, FOCUS[j.focusLevel] ? FOCUS[j.focusLevel].name.replace('Focus ', 'F') : j.focusLevel]), 5)}<p class="hint">Your last 12 sessions. Longer bars are deeper levels.</p>`;
+      }
+      $('patBody').innerHTML = h; $('patterns').showModal();
+    });
+    document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => b.closest('dialog').close()));
+    $('patterns').addEventListener('click', (e) => { if (e.target === $('patterns')) $('patterns').close(); });
+
+    // ---- export / import ----
+    $('exportBtn').addEventListener('click', () => {
+      const bookmarks = {}; for (let i = 1; i <= 6; i++) { const b = store.get(`hemilab_bookmark_${i}`, null); if (b) bookmarks[i] = b; }
+      const blob = new Blob([JSON.stringify({ app: 'hemi-lab-ultra', version: '1.2.0', exportedAt: new Date().toISOString(), journals: journals(), bookmarks }, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `hemilab-journal-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    });
+    $('importFile').addEventListener('change', (e) => {
+      const file = e.target.files[0]; e.target.value = ''; if (!file) return;
+      const r = new FileReader();
+      r.onload = () => {
+        try {
+          const data = JSON.parse(r.result);
+          const incoming = Array.isArray(data) ? data : Array.isArray(data.journals) ? data.journals : null; // old exports were a bare array
+          if (!incoming) throw new Error('That file isn’t a Hemi-Lab export');
+          const valid = incoming.filter((j) => j && typeof j === 'object' && j.timestamp && typeof j.reflection === 'string');
+          const have = journals(); const seen = new Set(have.map((j) => j.timestamp + '|' + j.reflection.slice(0, 40)));
+          const fresh = valid.filter((j) => !seen.has(j.timestamp + '|' + j.reflection.slice(0, 40)));
+          store.set('hemilab_journals', have.concat(fresh).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)));
+          if (data.bookmarks && typeof data.bookmarks === 'object') Object.entries(data.bookmarks).forEach(([k, v]) => { if (+k >= 1 && +k <= 6 && v && v.baseFreq) store.set(`hemilab_bookmark_${k}`, v); });
+          renderJournal(); renderSlots();
+          toast(`Imported ${fresh.length} new entr${fresh.length === 1 ? 'y' : 'ies'}${valid.length - fresh.length ? ` (${valid.length - fresh.length} already here)` : ''}`, 4000);
+        } catch (err) { toast(`Import failed: ${err.message}`, 4500); }
+      };
+      r.readAsText(file);
+    });
+
+    // ===================================================================
+    //  the scope: L/R Lissajous inside a hex REBAL shield
+    // ===================================================================
+    const cv = $('scope'), g2 = cv.getContext('2d');
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let bufL = null, bufR = null;
+    function sizeCanvas() { const r = cv.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1); cv.width = Math.round(r.width * d); cv.height = Math.round(r.height * d); }
+    function hexPath(cx, cy, r, rot = 0) { g2.beginPath(); for (let i = 0; i < 6; i++) { const a = rot + Math.PI / 6 + i * Math.PI / 3; const x = cx + r * Math.cos(a), y = cy + r * Math.sin(a); i ? g2.lineTo(x, y) : g2.moveTo(x, y); } g2.closePath(); }
+    function paintRebal() { /* drawn each frame; this exists so restore() can trigger a repaint when idle */ }
+    let lastT = performance.now(), spin = 0;
+    function frame(t) {
+      const dt = Math.min(0.1, (t - lastT) / 1000); lastT = t;
+      const W = cv.width, H = cv.height, cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.36;
+      g2.clearRect(0, 0, W, H);
+      // breath level eases toward its target over the phase length
+      const k = clamp((t - S.breathT0) / S.breathDur, 0, 1); const ease = 0.5 - 0.5 * Math.cos(Math.PI * k);
+      S.breathLevel = (S.breathFrom ?? 0.5) + (S.breathTarget - (S.breathFrom ?? 0.5)) * ease;
+      const scale = 0.86 + S.breathLevel * 0.2;
+      if (!reduce) spin += dt * (S.playing ? 0.12 : 0.03);
+
+      // REBAL shield: nested hex rings
+      if ($('rebalMode').checked) {
+        for (let i = 4; i >= 1; i--) {
+          const r = R * scale * (0.62 + i * 0.12);
+          hexPath(cx, cy, r, (i % 2 ? spin : -spin) * (0.5 + i * 0.15));
+          g2.strokeStyle = i % 2 ? `rgba(242,169,59,${S.playing ? 0.16 + i * 0.05 : 0.08 + i * 0.02})` : `rgba(185,160,245,${S.playing ? 0.14 + i * 0.04 : 0.06 + i * 0.02})`;
+          g2.lineWidth = Math.max(1, W / 420); g2.stroke();
+        }
+        const glow = g2.createRadialGradient(cx, cy, R * 0.1, cx, cy, R * scale * 1.15);
+        glow.addColorStop(0, S.playing ? 'rgba(242,169,59,0.16)' : 'rgba(242,169,59,0.06)');
+        glow.addColorStop(0.7, 'rgba(155,123,234,0.06)'); glow.addColorStop(1, 'rgba(0,0,0,0)');
+        g2.fillStyle = glow; g2.fillRect(0, 0, W, H);
+      }
+
+      // Lissajous of left ear (x) vs right ear (y). The figure turns at exactly the beat rate.
+      if (S.playing && S.anL) {
+        const n = S.anL.fftSize;
+        if (!bufL || bufL.length !== n) { bufL = new Float32Array(n); bufR = new Float32Array(n); }
+        S.anL.getFloatTimeDomainData(bufL); S.anR.getFloatTimeDomainData(bufR);
+        let peak = 0.0001; for (let i = 0; i < n; i += 4) peak = Math.max(peak, Math.abs(bufL[i]), Math.abs(bufR[i]));
+        const amp = (R * 0.78 * scale) / Math.max(peak, 0.25);
+        g2.save(); g2.translate(cx, cy); g2.rotate(Math.PI / 4);
+        g2.beginPath();
+        for (let i = 0; i < n; i += 2) { const x = bufL[i] * amp, y = -bufR[i] * amp; i ? g2.lineTo(x, y) : g2.moveTo(x, y); }
+        g2.strokeStyle = 'rgba(255,210,122,0.85)'; g2.lineWidth = Math.max(1.2, W / 360);
+        g2.shadowColor = 'rgba(242,169,59,0.9)'; g2.shadowBlur = W / 40; g2.stroke();
+        g2.restore();
+      } else {
+        // idle: a quiet honey core
+        hexPath(cx, cy, R * 0.32 * scale, spin);
+        g2.fillStyle = 'rgba(242,169,59,0.12)'; g2.fill();
+        g2.strokeStyle = 'rgba(242,169,59,0.5)'; g2.lineWidth = Math.max(1, W / 420); g2.stroke();
+        g2.fillStyle = 'rgba(246,233,210,0.7)'; g2.font = `500 ${Math.round(W / 34)}px "JetBrains Mono", monospace`; g2.textAlign = 'center';
+        g2.fillText('press Begin', cx, cy + R * 0.32 * scale + W / 16);
+      }
+      requestAnimationFrame(frame);
+    }
+
+    // ===================================================================
+    //  theme, keyboard, boot
+    // ===================================================================
+    function setTheme(light) {
+      document.body.classList.toggle('light', light);
+      $('themeBtn').setAttribute('aria-pressed', light); $('themeLabel').textContent = light ? 'Night' : 'Beeswax';
+      document.querySelector('meta[name=theme-color]').content = light ? '#fbf4e6' : '#120c07';
+      try { localStorage.setItem('hemilab_theme', light ? 'light' : 'dark'); } catch (_) {}
+    }
+    $('themeBtn').addEventListener('click', () => setTheme(!document.body.classList.contains('light')));
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && (e.code === 'Space' || e.key === ' ')) { e.preventDefault(); S.playing ? stopSession('Ended early') : startSession(); }
+      else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'j') { e.preventDefault(); $('jText').focus(); $('jText').scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+    });
+    const KONAMI = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'KeyB', 'KeyA']; let kc = [];
+    document.addEventListener('keydown', (e) => { kc.push(e.code); kc = kc.slice(-10); if (kc.join() === KONAMI.join()) { kc = []; toast('🛸 “The Explorer becomes the Explored.”', 4200); } });
+    addEventListener('resize', sizeCanvas);
+    addEventListener('beforeunload', (e) => { if (S.playing) { e.preventDefault(); e.returnValue = ''; } });
+
+    // boot
+    $('yr').textContent = new Date().getFullYear();
+    setTheme((() => { try { return localStorage.getItem('hemilab_theme') === 'light'; } catch (_) { return false; } })());
+    $('affirmText').value = store.get('hemilab_affirmations', DEFAULT_AFFIRMATIONS.join('\n'));
+    selectFocus('10');
+    renderSlots(); renderJournal(); updateJournalDuration();
+    sizeCanvas(); requestAnimationFrame(frame);
+    if (typeof BinauralEngine === 'undefined') toast('binaural_engine.js didn’t load. Keep it next to index.html', 8000);
+  })();
+  </script>
+</body>
 </html>
